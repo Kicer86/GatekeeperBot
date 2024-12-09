@@ -34,8 +34,6 @@ class RolesBot(discord.Client):
                 await message.channel.send("Tylko administrator może wydawać polecenia.")
                 return
 
-            print(message.content)
-
             if message.content == f"<@{self.user.id}> refresh":
                 async with self.channel.typing():
                     await self._refresh_roles(message.guild.members)
