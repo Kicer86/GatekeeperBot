@@ -54,7 +54,13 @@ class RolesBot(discord.Client):
                     await member.add_roles(*missing_ids)
                     added_roles[member.name] = missing
 
-                removed_roles[member.name] = to_remove
+                # remove taken roles
+                redundant = [remove for remove in to_remove if remove in role_names]
+
+                if len(redundant) > 0:
+                    redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
+                    await member.remove_roles(*redundant_ids)
+                    removed_roles[member.name] = redundant
 
             if username in expected_roles:
                 await apply_roles(*expected_roles[username])
