@@ -84,7 +84,7 @@ class RolesBot(discord.Client):
             await channel.send(removed_roles_status)
 
         if len(no_data_for) > 0:
-            no_data_for_status = "Użytkownicy obecni na serwerze, dla których brak danych w baze danych:\n"
+            no_data_for_status = "Użytkownicy obecni na serwerze, dla których brak danych w bazie danych:\n"
             no_data_for_status += ", ".join(no_data_for)
 
             await channel.send(no_data_for_status)
