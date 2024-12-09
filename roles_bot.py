@@ -43,15 +43,23 @@ class RolesBot(discord.Client):
             id = str(member.id)
             username = member.name
             roles = member.roles
+            role_names = {role.name for role in roles}
 
-            def apply_roles(to_add, to_remove):
-                added_roles[member.name] = to_add
+            async def apply_roles(to_add, to_remove):
+                # add missing roles
+                missing = [add for add in to_add if add not in role_names]
+
+                if len(missing) > 0:
+                    missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing]
+                    await member.add_roles(*missing_ids)
+                    added_roles[member.name] = missing
+
                 removed_roles[member.name] = to_remove
 
             if username in expected_roles:
-                apply_roles(*expected_roles[username])
+                await apply_roles(*expected_roles[username])
             elif id in expected_roles:
-                apply_roles(*expected_roles[id])
+                await apply_roles(*expected_roles[id])
             else:
                 no_data_for.append(member.name)
 
