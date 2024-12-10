@@ -52,26 +52,24 @@ class RolesBot(discord.Client):
             roles = member.roles
             role_names = {role.name for role in roles}
 
-            async def apply_roles(to_add, to_remove):
-                # add missing roles
-                missing = [add for add in to_add if add not in role_names]
-
-                if len(missing) > 0:
-                    missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing]
-                    await member.add_roles(*missing_ids)
-                    added_roles[member.name] = missing
-
-                # remove taken roles
-                redundant = [remove for remove in to_remove if remove in role_names]
-
-                if len(redundant) > 0:
-                    redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
-                    await member.remove_roles(*redundant_ids)
-                    removed_roles[member.name] = redundant
-
             roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
             print(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
-            await apply_roles(roles_to_add, roles_to_remove)
+
+            # add missing roles
+            missing = [add for add in roles_to_add if add not in role_names]
+
+            if len(missing) > 0:
+                missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing]
+                await member.add_roles(*missing_ids)
+                added_roles[member.name] = missing
+
+            # remove taken roles
+            redundant = [remove for remove in roles_to_remove if remove in role_names]
+
+            if len(redundant) > 0:
+                redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
+                await member.remove_roles(*redundant_ids)
+                removed_roles[member.name] = redundant
 
         print("Print reports")
         await self._write_to_dedicated_channel("Aktualizacja ról zakończona.")
