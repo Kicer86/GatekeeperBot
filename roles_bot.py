@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 
 
 class RolesSource:
-    def get_expected_roles(self) -> Dict[str, Tuple[List[str], List[str]]]:   # user name, (roles to be added, roles to be removed)
+    def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:        # get roles for member. Returns (roles to be added, roles to be removed)
         pass
 
 
@@ -42,15 +42,10 @@ class RolesBot(discord.Client):
         await self.channel.send(message)
 
     async def _refresh_roles(self, members):
-        expected_roles = self.roles_source.get_expected_roles()
-
-        no_data_for = []
         added_roles = {}
         removed_roles = {}
 
         for member in members:
-            id = str(member.id)
-            username = member.name
             roles = member.roles
             role_names = {role.name for role in roles}
 
@@ -71,12 +66,8 @@ class RolesBot(discord.Client):
                     await member.remove_roles(*redundant_ids)
                     removed_roles[member.name] = redundant
 
-            if username in expected_roles:
-                await apply_roles(*expected_roles[username])
-            elif id in expected_roles:
-                await apply_roles(*expected_roles[id])
-            else:
-                no_data_for.append(member.name)
+            roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
+            await apply_roles(roles_to_add, roles_to_remove)
 
         if len(added_roles) > 0:
             added_roles_status = "Nowe role nadane użytkownikom:\n"
@@ -91,9 +82,3 @@ class RolesBot(discord.Client):
                 removed_roles_status += f"{user}: {", ".join(roles)}\n"
 
             await self._write_to_dedicated_channel(removed_roles_status)
-
-        if len(no_data_for) > 0:
-            no_data_for_status = "Użytkownicy obecni na serwerze, dla których brak danych w bazie danych:\n"
-            no_data_for_status += ", ".join(no_data_for)
-
-            await self._write_to_dedicated_channel(no_data_for_status)
