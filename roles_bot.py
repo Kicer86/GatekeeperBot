@@ -39,13 +39,16 @@ class RolesBot(discord.Client):
                     await self._refresh_roles(message.guild.members)
 
     async def _write_to_dedicated_channel(self, message: str):
+        print(f"Sending message: {message}")
         await self.channel.send(message)
 
     async def _refresh_roles(self, members):
+        print("Refreshing roles")
         added_roles = {}
         removed_roles = {}
 
         for member in members:
+            print(f"Processing user {member.name}")
             roles = member.roles
             role_names = {role.name for role in roles}
 
@@ -67,8 +70,11 @@ class RolesBot(discord.Client):
                     removed_roles[member.name] = redundant
 
             roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
+            print(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
             await apply_roles(roles_to_add, roles_to_remove)
 
+        print("Print reports")
+        await self._write_to_dedicated_channel("Aktualizacja ról zakończona.")
         if len(added_roles) > 0:
             added_roles_status = "Nowe role nadane użytkownikom:\n"
             for user, roles in added_roles.items():
@@ -82,3 +88,6 @@ class RolesBot(discord.Client):
                 removed_roles_status += f"{user}: {", ".join(roles)}\n"
 
             await self._write_to_dedicated_channel(removed_roles_status)
+
+        if len(added_roles) == 0 and len(removed_roles) == 0:
+            await self._write_to_dedicated_channel("Brak zmian do wprowadzenia.")
