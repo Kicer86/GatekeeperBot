@@ -5,6 +5,9 @@ from typing import Dict, List, Tuple
 
 
 class RolesSource:
+    def invalidate_cache(self):                                                             # clear cache
+        pass
+
     def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:        # get roles for member. Returns (roles to be added, roles to be removed)
         pass
 
