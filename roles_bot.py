@@ -72,20 +72,23 @@ class RolesBot(discord.Client):
                 removed_roles[member.name] = redundant
 
         print("Print reports")
-        await self._write_to_dedicated_channel("Aktualizacja ról zakończona.")
+        message_parts = []
+
+        message_parts.append("Aktualizacja ról zakończona.")
         if len(added_roles) > 0:
             added_roles_status = "Nowe role nadane użytkownikom:\n"
             for user, roles in added_roles.items():
                 added_roles_status += f"{user}: {", ".join(roles)}\n"
-
-            await self._write_to_dedicated_channel(added_roles_status)
+            message_parts.append(added_roles_status)
 
         if len(removed_roles) > 0:
             removed_roles_status = "Role zabrane użytkownikom:\n"
             for user, roles in removed_roles.items():
                 removed_roles_status += f"{user}: {", ".join(roles)}\n"
-
-            await self._write_to_dedicated_channel(removed_roles_status)
+            message_parts.append(removed_roles_status)
 
         if len(added_roles) == 0 and len(removed_roles) == 0:
-            await self._write_to_dedicated_channel("Brak zmian do wprowadzenia.")
+            message_parts.append("Brak zmian do wprowadzenia.")
+
+        final_message = "\n".join(message_parts)
+        await self._write_to_dedicated_channel(final_message)
