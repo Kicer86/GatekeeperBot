@@ -1,4 +1,5 @@
 
+import asyncio
 import discord
 
 from typing import Dict, List, Tuple
@@ -73,6 +74,10 @@ class RolesBot(discord.Client):
                 redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
                 await member.remove_roles(*redundant_ids)
                 removed_roles[member.name] = redundant
+
+            # in case of any role change action, perform a sleep to avoid rate limit
+            if len(missing) > 0 or len(redundant) > 0:
+                await asyncio.sleep(1)
 
         print("Print reports")
         message_parts = []
