@@ -1,6 +1,7 @@
 
 import asyncio
 import discord
+import logging
 
 from typing import Dict, List, Tuple
 
@@ -14,7 +15,7 @@ class RolesSource:
 
 
 class RolesBot(discord.Client):
-    def __init__(self, dedicated_channel: str, roles_source: RolesSource):
+    def __init__(self, dedicated_channel: str, roles_source: RolesSource, logger):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
@@ -22,9 +23,10 @@ class RolesBot(discord.Client):
         self.roles_source = roles_source
         self.channel_name = dedicated_channel
         self.channel = None
+        self.logger = logger
 
     async def on_ready(self):
-        print(f"Bot is ready as {self.user}")
+        self.logger.info(f"Bot is ready as {self.user}")
 
         if len(self.guilds) != 1:
             raise RuntimeError(f"Invalid number of guilds: {len(self.guilds)}")
@@ -43,21 +45,21 @@ class RolesBot(discord.Client):
                     await self._refresh_roles(message.guild.members)
 
     async def _write_to_dedicated_channel(self, message: str):
-        print(f"Sending message: {message}")
+        self.logger.debug(f"Sending message {message}")
         await self.channel.send(message)
 
     async def _refresh_roles(self, members):
-        print("Refreshing roles")
+        self.logger.info("Refreshing roles")
         added_roles = {}
         removed_roles = {}
 
         for member in members:
-            print(f"Processing user {member.name}")
+            self.logger.debug(f"Processing user {member.name}")
             roles = member.roles
             role_names = {role.name for role in roles}
 
             roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
-            print(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
+            self.logger.debug(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
 
             # add missing roles
             missing = [add for add in roles_to_add if add not in role_names]
@@ -79,7 +81,7 @@ class RolesBot(discord.Client):
             if len(missing) > 0 or len(redundant) > 0:
                 await asyncio.sleep(1)
 
-        print("Print reports")
+        self.logger.info("Print reports")
         message_parts = []
 
         message_parts.append("Aktualizacja ról zakończona.")
