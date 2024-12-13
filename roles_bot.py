@@ -88,13 +88,13 @@ class RolesBot(discord.Client):
         if len(added_roles) > 0:
             added_roles_status = "Nowe role nadane użytkownikom:\n"
             for user, roles in added_roles.items():
-                added_roles_status += f"{user}: {", ".join(roles)}\n"
+                added_roles_status += f"{user}: {', '.join(roles)}\n"
             message_parts.append(added_roles_status)
 
         if len(removed_roles) > 0:
             removed_roles_status = "Role zabrane użytkownikom:\n"
             for user, roles in removed_roles.items():
-                removed_roles_status += f"{user}: {", ".join(roles)}\n"
+                removed_roles_status += f"{user}: {', '.join(roles)}\n"
             message_parts.append(removed_roles_status)
 
         if len(added_roles) == 0 and len(removed_roles) == 0:
