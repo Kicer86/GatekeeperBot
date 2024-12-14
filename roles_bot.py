@@ -3,7 +3,7 @@ import asyncio
 import discord
 import logging
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 
 class RolesSource:
@@ -47,9 +47,41 @@ class RolesBot(discord.Client):
                 async with self.channel.typing():
                     await self._refresh_roles(message.guild.members)
 
+    async def on_member_join(self, member):
+        pass
+
     async def _write_to_dedicated_channel(self, message: str):
         self.logger.debug(f"Sending message {message}")
         await self.channel.send(message)
+
+    async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[Set, Set]:
+        roles = member.roles
+        role_names = {role.name for role in roles}
+
+        added_roles = {}
+        removed_roles = {}
+
+        # add missing roles
+        missing = [add for add in roles_to_add if add not in role_names]
+
+        if len(missing) > 0:
+            missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing]
+            await member.add_roles(*missing_ids)
+            added_roles[member.name] = missing
+
+        # remove taken roles
+        redundant = [remove for remove in roles_to_remove if remove in role_names]
+
+        if len(redundant) > 0:
+            redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
+            await member.remove_roles(*redundant_ids)
+            removed_roles[member.name] = redundant
+
+        # in case of any role change action, perform a sleep to avoid rate limit
+        if len(missing) > 0 or len(redundant) > 0:
+            await asyncio.sleep(1)
+
+        return (added_roles, removed_roles)
 
     async def _refresh_roles(self, members):
         self.logger.info("Refreshing roles")
@@ -58,31 +90,13 @@ class RolesBot(discord.Client):
 
         for member in members:
             self.logger.debug(f"Processing user {member.name}")
-            roles = member.roles
-            role_names = {role.name for role in roles}
 
             roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
             self.logger.debug(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
 
-            # add missing roles
-            missing = [add for add in roles_to_add if add not in role_names]
-
-            if len(missing) > 0:
-                missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing]
-                await member.add_roles(*missing_ids)
-                added_roles[member.name] = missing
-
-            # remove taken roles
-            redundant = [remove for remove in roles_to_remove if remove in role_names]
-
-            if len(redundant) > 0:
-                redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
-                await member.remove_roles(*redundant_ids)
-                removed_roles[member.name] = redundant
-
-            # in case of any role change action, perform a sleep to avoid rate limit
-            if len(missing) > 0 or len(redundant) > 0:
-                await asyncio.sleep(1)
+            added, removed = await self._update_member_roles(member, roles_to_add, roles_to_remove)
+            added_roles.update(added)
+            removed_roles.update(removed)
 
         self.logger.info("Print reports")
         message_parts = []
