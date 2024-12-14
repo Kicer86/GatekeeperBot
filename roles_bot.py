@@ -28,6 +28,7 @@ class RolesBot(discord.Client):
         self.channel = None
         self.logger = logger
 
+
     async def on_ready(self):
         self.logger.info(f"Bot is ready as {self.user}")
 
@@ -36,6 +37,7 @@ class RolesBot(discord.Client):
 
         guild = self.guilds[0]
         self.channel = discord.utils.get(guild.channels, name=self.channel_name)
+
 
     async def on_message(self, message):
         if self.user in message.mentions and len(message.mentions) == 1:
@@ -47,12 +49,41 @@ class RolesBot(discord.Client):
                 async with self.channel.typing():
                     await self._refresh_roles(message.guild.members)
 
+
     async def on_member_join(self, member):
-        pass
+        self.logger.info(f"Applying roles for new user: {member.name}.")
+        roles_to_add, roles_to_remove = self.roles_source.fetch_user_roles(member)
+        self.logger.debug(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
+
+        added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
+
+        self.logger.info("Print report")
+        message_parts = []
+
+        message_parts.append(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.")
+        if len(added_roles) > 0:
+            added_roles_status = "Nadane role:\n"
+            for user, roles in added_roles.items():
+                added_roles_status += f"{user}: {', '.join(roles)}\n"
+            message_parts.append(added_roles_status)
+
+        if len(removed_roles) > 0:
+            removed_roles_status = "Zabrane role:\n"
+            for user, roles in removed_roles.items():
+                removed_roles_status += f"{user}: {', '.join(roles)}\n"
+            message_parts.append(removed_roles_status)
+
+        if len(added_roles) == 0 and len(removed_roles) == 0:
+            message_parts.append("Brak ról do nadania lub zabrania.")
+
+        final_message = "\n".join(message_parts)
+        await self._write_to_dedicated_channel(final_message)
+
 
     async def _write_to_dedicated_channel(self, message: str):
         self.logger.debug(f"Sending message {message}")
         await self.channel.send(message)
+
 
     async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[Set, Set]:
         roles = member.roles
@@ -83,8 +114,9 @@ class RolesBot(discord.Client):
 
         return (added_roles, removed_roles)
 
+
     async def _refresh_roles(self, members):
-        self.logger.info("Refreshing roles")
+        self.logger.info("Refreshing roles for all users.")
         added_roles = {}
         removed_roles = {}
 
