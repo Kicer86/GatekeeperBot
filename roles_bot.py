@@ -16,15 +16,22 @@ class RolesSource:
     def fetch_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:      # get roles for member. Returns (roles to be added, roles to be removed) omiting cache
         pass
 
+    def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:      # get roles for member who reacted on a message in auto roles channel
+        pass
+
+    def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who unreacted on a message in auto roles channel
+        pass
+
 
 class RolesBot(discord.Client):
-    def __init__(self, dedicated_channel: str, roles_source: RolesSource, logger):
+    def __init__(self, dedicated_channel: str, roles_source: RolesSource, auto_roles_channels: List[int], logger):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
         super().__init__(intents = intents)
         self.roles_source = roles_source
         self.channel_name = dedicated_channel
+        self.auto_roles_channels = auto_roles_channels
         self.channel = None
         self.logger = logger
 
@@ -37,6 +44,10 @@ class RolesBot(discord.Client):
 
         guild = self.guilds[0]
         self.channel = discord.utils.get(guild.channels, name=self.channel_name)
+
+        for auto_roles_channel in self.auto_roles_channels:
+            channel = await self.fetch_channel(auto_roles_channel)
+            self.logger.debug(f"Auto roles: listening for reactions in channel {channel}")
 
 
     async def on_message(self, message):
@@ -80,9 +91,36 @@ class RolesBot(discord.Client):
         await self._write_to_dedicated_channel(final_message)
 
 
+    async def on_raw_reaction_add(self, payload):
+        await self._update_auto_roles(payload, self.roles_source.get_user_auto_roles_reaction)
+
+
+    async def on_raw_reaction_remove(self, payload):
+        await self._update_auto_roles(payload, self.roles_source.get_user_auto_roles_unreaction)
+
+
     async def _write_to_dedicated_channel(self, message: str):
         self.logger.debug(f"Sending message {message}")
         await self.channel.send(message)
+
+
+    async def _update_auto_roles(self, payload, roles_source):
+        guild = self.get_guild(payload.guild_id)
+        channel_id = payload.channel_id
+
+        if channel_id in self.auto_roles_channels:
+            member = guild.get_member(payload.user_id)
+            self.logger.info(f"Updating auto roles for user {member}")
+            message_id = payload.message_id
+            channel = await self.fetch_channel(channel_id)
+            message = await channel.fetch_message(message_id)
+            self.logger.debug(f"Caused by reaction on message {message.content} in channel {channel}")
+            roles_to_add, roles_to_remove = roles_source(member, message)
+
+            if len(roles_to_add) == 0 and len(roles_to_remove) == 0:
+                self.logger.warning(f"No roles to be added nor removed were returned after member {member} reaction in auto roles channel for {message.content}.")
+
+            await self._update_member_roles(member, roles_to_add, roles_to_remove)
 
 
     async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[Set, Set]:
