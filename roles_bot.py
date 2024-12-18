@@ -82,7 +82,7 @@ class RolesBot(discord.Client):
 
 
     async def _write_to_dedicated_channel(self, message: str):
-        self.logger.debug(f"Sending message {message}")
+        self.logger.debug(f"Sending message {repr(message)}")
         await self.channel.send(message)
 
 
