@@ -68,27 +68,7 @@ class RolesBot(discord.Client):
 
         added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
 
-        self.logger.info("Print report")
-        message_parts = []
-
-        message_parts.append(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.")
-        if len(added_roles) > 0:
-            added_roles_status = "Nadane role:\n"
-            for user, roles in added_roles.items():
-                added_roles_status += f"{', '.join(roles)}\n"
-            message_parts.append(added_roles_status)
-
-        if len(removed_roles) > 0:
-            removed_roles_status = "Zabrane role:\n"
-            for user, roles in removed_roles.items():
-                removed_roles_status += f"{', '.join(roles)}\n"
-            message_parts.append(removed_roles_status)
-
-        if len(added_roles) == 0 and len(removed_roles) == 0:
-            message_parts.append("Brak ról do nadania lub zabrania.")
-
-        final_message = "\n".join(message_parts)
-        await self._write_to_dedicated_channel(final_message)
+        await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", list(added_roles), list(removed_roles))
 
 
     async def on_raw_reaction_add(self, payload):
@@ -102,6 +82,28 @@ class RolesBot(discord.Client):
     async def _write_to_dedicated_channel(self, message: str):
         self.logger.debug(f"Sending message {message}")
         await self.channel.send(message)
+
+
+    async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
+        self.logger.info("Print report")
+        message_parts = []
+
+        message_parts.append(title)
+        if len(added_roles) > 0:
+            added_roles_status = "Nadane role:\n"
+            added_roles_status += f"{', '.join(added_roles)}\n"
+            message_parts.append(added_roles_status)
+
+        if len(removed_roles) > 0:
+            removed_roles_status = "Zabrane role:\n"
+            removed_roles_status += f"{', '.join(removed_roles)}\n"
+            message_parts.append(removed_roles_status)
+
+        if len(added_roles) == 0 and len(removed_roles) == 0:
+            message_parts.append("Brak ról do nadania lub zabrania.")
+
+        final_message = "\n".join(message_parts)
+        await self._write_to_dedicated_channel(final_message)
 
 
     async def _update_auto_roles(self, payload, roles_source):
@@ -121,6 +123,7 @@ class RolesBot(discord.Client):
                 self.logger.warning(f"No roles to be added nor removed were returned after member {member} reaction in auto roles channel for {message.content}.")
 
             await self._update_member_roles(member, roles_to_add, roles_to_remove)
+            await self._single_user_report(f"Użytkownik {member} dokonał zmian roli:", roles_to_add, roles_to_remove)
 
 
     async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[Set, Set]:
