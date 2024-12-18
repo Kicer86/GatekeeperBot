@@ -24,13 +24,13 @@ class RolesSource:
 
 
 class RolesBot(discord.Client):
-    def __init__(self, dedicated_channel: str, roles_source: RolesSource, auto_roles_channels: List[int], logger):
+    def __init__(self, dedicated_channel: int, roles_source: RolesSource, auto_roles_channels: List[int], logger):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
         super().__init__(intents = intents)
         self.roles_source = roles_source
-        self.channel_name = dedicated_channel
+        self.channel_id = dedicated_channel
         self.auto_roles_channels = auto_roles_channels
         self.channel = None
         self.logger = logger
@@ -43,7 +43,9 @@ class RolesBot(discord.Client):
             raise RuntimeError(f"Invalid number of guilds: {len(self.guilds)}")
 
         guild = self.guilds[0]
-        self.channel = discord.utils.get(guild.channels, name=self.channel_name)
+        self.channel = await self.fetch_channel(self.channel_id)
+
+        self.logger.debug(f"Using channel {self.channel} for notifications")
 
         for auto_roles_channel in self.auto_roles_channels:
             channel = await self.fetch_channel(auto_roles_channel)
