@@ -53,21 +53,24 @@ class DiscordMock:
 
 class TestRolesBot(unittest.IsolatedAsyncioTestCase):
     async def test_user_joins(self):
+        # setup discord server mock
         discordMock = DiscordMock()
         discordMock.setup_guild_roles(["Add1", "Add2", "RemoveMe", "RemoveMeToo", "LeaveMe"])
-        report_channel_id = discordMock.add_channel("report_channel")
-        member = discordMock.setup_member("TestUser", ["RemoveMe", "RemoveMeToo", "LeaveMe"])
 
         roles_source = MagicMock(spec=RolesSource())
-        def fetch_user_roles(member):
+        def fetch_user_roles(member: discord.Member):
             return ("Add1", "Add2"), ("RemoveMe", "RemoveMeToo")
         roles_source.fetch_user_roles.side_effect = fetch_user_roles
 
-        bot = RolesBot(dedicated_channel=report_channel_id, roles_source=roles_source, auto_roles_channels=[], logger=logging.getLogger("Test"))
-        bot.fetch_channel = partial(discordMock.mock_fetch_channel, discordMock)
-
         with patch.object(RolesBot, "guilds", new=[discordMock.guild]):
-            # Emulate member join
+            # Setup bot and emulate user join
+            report_channel_id = discordMock.add_channel("report_channel")
+
+            bot = RolesBot(dedicated_channel=report_channel_id, roles_source=roles_source, auto_roles_channels=[], logger=logging.getLogger("Test"))
+            bot.fetch_channel = partial(discordMock.mock_fetch_channel, discordMock)
+
+            member = discordMock.setup_member("TestUser", ["RemoveMe", "RemoveMeToo", "LeaveMe"])
+
             await bot.on_ready()
             await bot.on_member_join(member)
 
@@ -88,3 +91,4 @@ class TestRolesBot(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
