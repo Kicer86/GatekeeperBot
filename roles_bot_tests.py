@@ -4,6 +4,7 @@ import logging
 import unittest
 from functools import partial
 from unittest.mock import AsyncMock, MagicMock, patch
+from typing import List, Tuple
 
 from roles_bot import RolesBot, RolesSource
 
@@ -51,16 +52,36 @@ class DiscordMock:
         return self.channels.get(channel_id, None)
 
 
+class RolesSourceFake(RolesSource):
+    def __init__(self):
+        self.roles_db = {}
+
+    def set_user_roles(self, user: str, roles_to_add, roles_to_remove):
+        self.roles_db[user] = (roles_to_add, roles_to_remove)
+
+    def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:
+        data = self.roles_db.get(member.name, ([], []))
+        return data
+
+    def fetch_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:
+        return self.get_user_roles(member)
+
+    def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:
+        pass
+
+    def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:
+        pass
+
+
 class TestRolesBot(unittest.IsolatedAsyncioTestCase):
     async def test_user_joins(self):
         # setup discord server mock
         discordMock = DiscordMock()
         discordMock.setup_guild_roles(["Add1", "Add2", "RemoveMe", "RemoveMeToo", "LeaveMe"])
 
-        roles_source = MagicMock(spec=RolesSource())
-        def fetch_user_roles(member: discord.Member):
-            return ("Add1", "Add2"), ("RemoveMe", "RemoveMeToo")
-        roles_source.fetch_user_roles.side_effect = fetch_user_roles
+        # roles source will return given roles to be added and removed
+        roles_source = RolesSourceFake()
+        roles_source.set_user_roles("TestUser", ["Add1", "Add2"], ["RemoveMe", "RemoveMeToo"])
 
         with patch.object(RolesBot, "guilds", new=[discordMock.guild]):
             # Setup bot and emulate user join
@@ -88,6 +109,7 @@ class TestRolesBot(unittest.IsolatedAsyncioTestCase):
             member.add_roles.assert_awaited_once_with(
                 *[role for role in discordMock.guild.roles if role.name in ["Add1", "Add2"]]
             )
+
 
 if __name__ == "__main__":
     unittest.main()
