@@ -129,30 +129,30 @@ class RolesBot(discord.Client):
 
 
     async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[Set, Set]:
-        roles = member.roles
-        role_names = {role.name for role in roles}
+        member_roles = member.roles
+        member_role_names = {role.name for role in member_roles}
 
         added_roles = {}
         removed_roles = {}
 
         # add missing roles
-        missing = [add for add in roles_to_add if add not in role_names]
+        missing_roles = [add for add in roles_to_add if add not in member_role_names]
 
-        if len(missing) > 0:
-            missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing]
+        if len(missing_roles) > 0:
+            missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing_roles]
             await member.add_roles(*missing_ids)
-            added_roles[member.name] = missing
+            added_roles[member.name] = missing_roles
 
         # remove taken roles
-        redundant = [remove for remove in roles_to_remove if remove in role_names]
+        redundant_roles = [remove for remove in roles_to_remove if remove in member_role_names]
 
-        if len(redundant) > 0:
-            redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant]
+        if len(redundant_roles) > 0:
+            redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant_roles]
             await member.remove_roles(*redundant_ids)
-            removed_roles[member.name] = redundant
+            removed_roles[member.name] = redundant_roles
 
         # in case of any role change action, perform a sleep to avoid rate limit
-        if len(missing) > 0 or len(redundant) > 0:
+        if len(missing_roles) > 0 or len(redundant_roles) > 0:
             await asyncio.sleep(1)
 
         return (added_roles, removed_roles)
