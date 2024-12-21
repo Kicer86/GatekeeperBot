@@ -70,7 +70,7 @@ class RolesBot(discord.Client):
 
         added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
 
-        await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", list(added_roles), list(removed_roles))
+        await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
 
 
     async def on_raw_reaction_add(self, payload):
@@ -93,12 +93,12 @@ class RolesBot(discord.Client):
         message_parts.append(title)
         if len(added_roles) > 0:
             added_roles_status = "Nadane role:\n"
-            added_roles_status += f"{', '.join(added_roles)}\n"
+            added_roles_status += f"{', '.join(added_roles)}"
             message_parts.append(added_roles_status)
 
         if len(removed_roles) > 0:
-            removed_roles_status = "Zabrane role:\n"
-            removed_roles_status += f"{', '.join(removed_roles)}\n"
+            removed_roles_status = "Usunięte role:\n"
+            removed_roles_status += f"{', '.join(removed_roles)}"
             message_parts.append(removed_roles_status)
 
         if len(added_roles) == 0 and len(removed_roles) == 0:
@@ -124,16 +124,16 @@ class RolesBot(discord.Client):
             if len(roles_to_add) == 0 and len(roles_to_remove) == 0:
                 self.logger.warning(f"No roles to be added nor removed were returned after member {member} reaction in auto roles channel for {message.content}.")
 
-            await self._update_member_roles(member, roles_to_add, roles_to_remove)
-            await self._single_user_report(f"Użytkownik {member} dokonał zmian roli:", roles_to_add, roles_to_remove)
+            added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
+            await self._single_user_report(f"Użytkownik {member} dokonał zmian roli:", added_roles, removed_roles)
 
 
-    async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[Set, Set]:
+    async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
         member_roles = member.roles
         member_role_names = {role.name for role in member_roles}
 
-        added_roles = {}
-        removed_roles = {}
+        added_roles = []
+        removed_roles = []
 
         # add missing roles
         missing_roles = [add for add in roles_to_add if add not in member_role_names]
@@ -141,7 +141,7 @@ class RolesBot(discord.Client):
         if len(missing_roles) > 0:
             missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing_roles]
             await member.add_roles(*missing_ids)
-            added_roles[member.name] = missing_roles
+            added_roles = missing_roles
 
         # remove taken roles
         redundant_roles = [remove for remove in roles_to_remove if remove in member_role_names]
@@ -149,7 +149,7 @@ class RolesBot(discord.Client):
         if len(redundant_roles) > 0:
             redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant_roles]
             await member.remove_roles(*redundant_ids)
-            removed_roles[member.name] = redundant_roles
+            removed_roles = redundant_roles
 
         # in case of any role change action, perform a sleep to avoid rate limit
         if len(missing_roles) > 0 or len(redundant_roles) > 0:
