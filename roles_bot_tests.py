@@ -9,29 +9,37 @@ from roles_bot import RolesBot, RolesSource
 
 class TestMyBotCommands(unittest.IsolatedAsyncioTestCase):
     async def test_user_joins(self):
-        roles_source = MagicMock(spec = RolesSource())
-        bot = RolesBot(dedicated_channel = 1, roles_source = roles_source, auto_roles_channels = [2, 3, 4], logger = logging.getLogger("Test"))
-
         guild = MagicMock(spec=discord.Guild)
-        guild.roles = []
-
-        member = MagicMock(spec=discord.Member)
-        member.guild = guild
-        member.name = "TestUser"
-        member.id = 1234567890
 
         def fetch_user_roles(member):
             return (["Add1", "Add2"], ["RemoveMe", "RemoveMeToo"])
-
-        roles_source.fetch_user_roles.side_effect = fetch_user_roles
-
-        report_channel = AsyncMock(spec=discord.TextChannel)
 
         async def fetch_channel(self, channel_id: int) -> discord.abc.GuildChannel:
             if channel_id == 1:
                 return report_channel
             else:
                 return None
+
+        def create_role(name: str, id: int):
+            role = discord.Role(guild = guild, state = None, data = {"id": id, "name": name})
+
+            return role
+
+        roles_source = MagicMock(spec = RolesSource())
+        bot = RolesBot(dedicated_channel = 1, roles_source = roles_source, auto_roles_channels = [2, 3, 4], logger = logging.getLogger("Test"))
+
+
+        guild.roles = [create_role(name, i + 100) for (i, name) in enumerate(["Add1", "Add2", "RemoveMe", "RemoveMeToo", "LeaveMe"])]
+
+        member = MagicMock(spec=discord.Member)
+        member.guild = guild
+        member.name = "TestUser"
+        member.id = 1234567890
+        member.roles = [role for role in guild.roles if role.name in ["RemoveMe", "RemoveMeToo", "LeaveMe"]]
+
+        roles_source.fetch_user_roles.side_effect = fetch_user_roles
+
+        report_channel = AsyncMock(spec=discord.TextChannel)
 
         bot.fetch_channel = fetch_channel.__get__(bot)
 
