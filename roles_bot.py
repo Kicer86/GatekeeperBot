@@ -10,6 +10,9 @@ class RolesSource:
     def invalidate_cache(self):                                                             # clear cache
         pass
 
+    def set_notifier(self, notifier):                                                       # set callback for notifying in the name of bot on dedicated channel
+        pass
+
     def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:        # get roles for member. Returns (roles to be added, roles to be removed) which may be cached.
         pass
 
@@ -29,11 +32,13 @@ class RolesBot(discord.Client):
         intents.message_content = True
         intents.members = True
         super().__init__(intents = intents)
+
         self.roles_source = roles_source
         self.channel_id = dedicated_channel
         self.auto_roles_channels = auto_roles_channels
         self.channel = None
         self.logger = logger
+        roles_source.set_notifier(self._write_to_dedicated_channel)
 
 
     async def on_ready(self):
