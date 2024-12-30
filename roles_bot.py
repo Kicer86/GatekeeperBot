@@ -176,8 +176,12 @@ class RolesBot(discord.Client):
             self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
 
             added, removed = await self._update_member_roles(member, roles_to_add, roles_to_remove)
-            added_roles[member.name] = added
-            removed_roles[member.name] = removed
+
+            if len(added) > 0:
+                added_roles[member.name] = added
+
+            if len(removed) > 0:
+                removed_roles[member.name] = removed
 
         self.logger.info("Print reports")
         message_parts = []
