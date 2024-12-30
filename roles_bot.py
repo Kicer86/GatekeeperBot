@@ -3,6 +3,7 @@ import asyncio
 import discord
 import logging
 
+from discord.utils import escape_markdown
 from typing import Dict, List, Tuple, Set
 
 
@@ -169,14 +170,14 @@ class RolesBot(discord.Client):
         removed_roles = {}
 
         for member in members:
-            self.logger.debug(f"Processing user {member.name}")
+            self.logger.debug(f"Processing user {repr(member.name)}")
 
             roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
-            self.logger.debug(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
+            self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
 
             added, removed = await self._update_member_roles(member, roles_to_add, roles_to_remove)
-            added_roles.update(added)
-            removed_roles.update(removed)
+            added_roles[member.name] = added
+            removed_roles[member.name] = removed
 
         self.logger.info("Print reports")
         message_parts = []
@@ -198,4 +199,5 @@ class RolesBot(discord.Client):
             message_parts.append("Brak zmian do wprowadzenia.")
 
         final_message = "\n".join(message_parts)
-        await self._write_to_dedicated_channel(final_message)
+        final_message_escaped = escape_markdown(final_message)
+        await self._write_to_dedicated_channel(final_message_escaped)
