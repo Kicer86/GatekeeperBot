@@ -65,14 +65,14 @@ class RolesBot(discord.Client):
 
 
     async def on_message(self, message):
-        if self.user in message.mentions and len(message.mentions) == 1:
-            if not any(role.name == "Administrator" for role in message.author.roles):
-                await message.channel.send("Tylko administrator może wydawać polecenia.")
-                return
-
+        if self.user in message.mentions:
             message_content = message.content.strip()
             bot_mention = f"<@{self.user.id}>"
             if message_content.startswith(bot_mention):
+                if not any(role.name == "Administrator" for role in message.author.roles):
+                    await message.channel.send("Tylko administrator może wydawać polecenia.")
+                    return
+
                 whole_command = message_content[len(bot_mention):].strip()
                 command_splitted = whole_command.split(" ")
                 command = command_splitted[0]
