@@ -30,9 +30,10 @@ class RolesSource:
 
 @dataclass
 class BotConfig:
-    dedicated_channel: int
+    dedicated_channel: int                                  # channel id
     roles_source: RolesSource
-    auto_roles_channels: List[int]
+    auto_roles_channels: List[int]                          # channel ids
+    server_regulations_message_id: Tuple[int, int]          # channel id, message id
 
 
 class RolesBot(discord.Client):
@@ -46,6 +47,7 @@ class RolesBot(discord.Client):
         self.channel = None
         self.logger = logger
         self.config.roles_source.set_notifier(self._write_to_dedicated_channel)
+        self.member_ids_accepted_regulations = []
 
 
     async def on_ready(self):
@@ -62,6 +64,13 @@ class RolesBot(discord.Client):
         for auto_roles_channel in self.config.auto_roles_channels:
             channel = await self.fetch_channel(auto_roles_channel)
             self.logger.debug(f"Auto roles: listening for reactions in channel {channel}")
+
+        regulations_channel = guild.get_channel(self.config.server_regulations_message_id[0])
+        acceptance_message = await regulations_channel.fetch_message(self.config.server_regulations_message_id[1])
+        for reaction in acceptance_message.reactions:
+            emoji = reaction.emoji
+            if str(emoji) == "👍":
+                self.member_ids_accepted_regulations = [user.id async for user in reaction.users()]
 
 
     async def on_message(self, message):
@@ -85,7 +94,12 @@ class RolesBot(discord.Client):
                         await self._refresh_roles(message.guild.members)
                 elif command == "status":
                     async with self.channel.typing():
-                        await self._write_to_dedicated_channel("Ujdzie")
+                        guild = message.guild
+                        message = "Użytkownicy którzy zaakceptowali regulamin:\n"
+                        allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
+                        message += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
+
+                        await self._write_to_dedicated_channel(message)
                 elif command == "test" and len(args) > 0:
                     subcommand = args[0]
                     subargs = args[1:]
