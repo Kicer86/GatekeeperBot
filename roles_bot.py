@@ -73,13 +73,20 @@ class RolesBot(discord.Client):
             message_content = message.content.strip()
             bot_mention = f"<@{self.user.id}>"
             if message_content.startswith(bot_mention):
-                command = message_content[len(bot_mention):].strip()
+                whole_command = message_content[len(bot_mention):].strip()
+                command_splitted = whole_command.split(" ")
+                command = command_splitted[0]
+                args = command_splitted[1:]
+
+                self.logger.debug(f"Got command {repr(command)} with args {repr(args)}")
+
                 if command == "refresh":
                     async with self.channel.typing():
                         await self._refresh_roles(message.guild.members)
-                if command == "status":
+                elif command == "status":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Ujdzie")
+
 
     async def on_member_join(self, member):
         self.logger.info(f"Applying roles for new user: {member.name}.")
