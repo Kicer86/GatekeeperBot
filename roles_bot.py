@@ -7,12 +7,11 @@ from dataclasses import dataclass
 from discord.utils import escape_markdown
 from typing import Dict, List, Tuple, Set
 
+from roles_bot.configuration import Configuration
+
 
 class RolesSource:
     def invalidate_cache(self):                                                             # clear cache
-        pass
-
-    def set_notifier(self, notifier):                                                       # set callback for notifying in the name of bot on dedicated channel
         pass
 
     # methods to be called for known users
@@ -45,7 +44,7 @@ class BotConfig:
 
 
 class RolesBot(discord.Client):
-    def __init__(self, config: BotConfig, logger):
+    def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
@@ -54,8 +53,8 @@ class RolesBot(discord.Client):
         self.config = config
         self.channel = None
         self.logger = logger
-        self.config.roles_source.set_notifier(self._write_to_dedicated_channel)
         self.member_ids_accepted_regulations = []
+        self.storage = Configuration(storage_dir, logging.getLogger("Configuration"))
 
 
     async def on_ready(self):
@@ -136,10 +135,24 @@ class RolesBot(discord.Client):
 
             await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
         else:
-            await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie instrukcji powiązania konta.")
-            await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
-                                'Twój ID (który będzie trzeba przekopiować) to:\n')
-            await member.send(f'{member.id}')
+            config = self.storage.get_config()
+
+            unknown_notified_users = config.get("unknown_notified_users", [])
+            member_id = member.id
+
+            if member_id in unknown_notified_users:
+                await self._write_to_dedicated_channel(f"Nowy użytkownik {member.name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
+            else:
+                await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie instrukcji powiązania konta.")
+                await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
+                                    'Twój ID (który będzie trzeba przekopiować) to:\n')
+                await member.send(f'{member_id}')
+
+                unknown_notified_users.append(member_id)
+
+                config["unknown_notified_users"] = unknown_notified_users
+                self.storage.set_config(config)
+
 
     async def on_raw_reaction_add(self, payload):
         await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
