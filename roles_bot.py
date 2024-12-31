@@ -15,6 +15,7 @@ class RolesSource:
     def set_notifier(self, notifier):                                                       # set callback for notifying in the name of bot on dedicated channel
         pass
 
+    # methods to be called for known users
     def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:        # get roles for member. Returns (roles to be added, roles to be removed) which may be cached.
         pass
 
@@ -25,6 +26,13 @@ class RolesSource:
         pass
 
     def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who unreacted on a message in auto roles channel
+        pass
+
+    # methods for not known yet users
+    def is_user_known(self, member: discord.Member) -> bool:
+        pass
+
+    def roles_for_known_users(self) -> List[str]:
         pass
 
 
@@ -117,14 +125,21 @@ class RolesBot(discord.Client):
 
 
     async def on_member_join(self, member):
-        self.logger.info(f"Applying roles for new user: {member.name}.")
-        roles_to_add, roles_to_remove = self.config.roles_source.fetch_user_roles(member)
-        self.logger.debug(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
+        self.logger.info(f"New user {repr(member.name)} joining the server.")
 
-        added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
+        known = self.config.roles_source.is_user_known(member)
+        if known:
+            roles_to_add = self.config.roles_source.roles_for_known_users()
+            self.logger.debug(f"User is known. Adding new roles: {roles_to_add}")
 
-        await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
+            added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, [])
 
+            await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
+        else:
+            await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie instrukcji powiązania konta.")
+            await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
+                                'Twój ID (który będzie trzeba przekopiować) to:\n')
+            await member.send(f'{member.id}')
 
     async def on_raw_reaction_add(self, payload):
         await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
