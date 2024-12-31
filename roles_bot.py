@@ -86,17 +86,20 @@ class RolesBot(discord.Client):
                 elif command == "status":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Ujdzie")
-                elif command == "test_newuser" and len(args) == 1:
-                    user_mention = args[0]
-                    if user_mention.startswith('<@') and user_mention.endswith('>'):
-                        user_id = user_mention[2:-1]
-                        if user_id.startswith('!'):  # Handles the '!'-prefixed mention for nicknames
-                            user_id = user_id[1:]
-                        member_id = int(user_id)
-                        member = message.guild.get_member(member_id)
+                elif command == "test" and len(args) > 0:
+                    subcommand = args[0]
+                    subargs = args[1:]
+                    if subcommand == "newuser" and len(subargs) == 1:
+                        user_mention = subargs[0]
+                        if user_mention.startswith('<@') and user_mention.endswith('>'):
+                            user_id = user_mention[2:-1]
+                            if user_id.startswith('!'):  # Handles the '!'-prefixed mention for nicknames
+                                user_id = user_id[1:]
+                            member_id = int(user_id)
+                            member = message.guild.get_member(member_id)
 
-                        self.logger.info(f"Testing on_member_join for member {member.name}")
-                        await self.on_member_join(member)
+                            self.logger.info(f"Testing on_member_join for member {member.name}")
+                            await self.on_member_join(member)
 
 
     async def on_member_join(self, member):
