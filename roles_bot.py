@@ -70,10 +70,16 @@ class RolesBot(discord.Client):
                 await message.channel.send("Tylko administrator może wydawać polecenia.")
                 return
 
-            if message.content == f"<@{self.user.id}> refresh":
-                async with self.channel.typing():
-                    await self._refresh_roles(message.guild.members)
-
+            message_content = message.content.strip()
+            bot_mention = f"<@{self.user.id}>"
+            if message_content.startswith(bot_mention):
+                command = message_content[len(bot_mention):].strip()
+                if command == "refresh":
+                    async with self.channel.typing():
+                        await self._refresh_roles(message.guild.members)
+                if command == "status":
+                    async with self.channel.typing():
+                        await self._write_to_dedicated_channel("Ujdzie")
 
     async def on_member_join(self, member):
         self.logger.info(f"Applying roles for new user: {member.name}.")
