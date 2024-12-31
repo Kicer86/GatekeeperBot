@@ -3,6 +3,7 @@ import asyncio
 import discord
 import logging
 
+from dataclasses import dataclass
 from discord.utils import escape_markdown
 from typing import Dict, List, Tuple, Set
 
@@ -27,19 +28,24 @@ class RolesSource:
         pass
 
 
+@dataclass
+class BotConfig:
+    dedicated_channel: int
+    roles_source: RolesSource
+    auto_roles_channels: List[int]
+
+
 class RolesBot(discord.Client):
-    def __init__(self, dedicated_channel: int, roles_source: RolesSource, auto_roles_channels: List[int], logger):
+    def __init__(self, config: BotConfig, logger):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
         super().__init__(intents = intents)
 
-        self.roles_source = roles_source
-        self.channel_id = dedicated_channel
-        self.auto_roles_channels = auto_roles_channels
+        self.config = config
         self.channel = None
         self.logger = logger
-        roles_source.set_notifier(self._write_to_dedicated_channel)
+        self.config.roles_source.set_notifier(self._write_to_dedicated_channel)
 
 
     async def on_ready(self):
@@ -49,11 +55,11 @@ class RolesBot(discord.Client):
             raise RuntimeError(f"Invalid number of guilds: {len(self.guilds)}")
 
         guild = self.guilds[0]
-        self.channel = await self.fetch_channel(self.channel_id)
+        self.channel = await self.fetch_channel(self.config.dedicated_channel)
 
-        self.logger.debug(f"Using channel {self.channel} for notifications")
+        self.logger.debug(f"Using channel {self.config.dedicated_channel} for notifications")
 
-        for auto_roles_channel in self.auto_roles_channels:
+        for auto_roles_channel in self.config.auto_roles_channels:
             channel = await self.fetch_channel(auto_roles_channel)
             self.logger.debug(f"Auto roles: listening for reactions in channel {channel}")
 
@@ -71,7 +77,7 @@ class RolesBot(discord.Client):
 
     async def on_member_join(self, member):
         self.logger.info(f"Applying roles for new user: {member.name}.")
-        roles_to_add, roles_to_remove = self.roles_source.fetch_user_roles(member)
+        roles_to_add, roles_to_remove = self.config.roles_source.fetch_user_roles(member)
         self.logger.debug(f"Roles to add: {roles_to_add}, roles to remove: {roles_to_remove}")
 
         added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
@@ -80,11 +86,11 @@ class RolesBot(discord.Client):
 
 
     async def on_raw_reaction_add(self, payload):
-        await self._update_auto_roles(payload, self.roles_source.get_user_auto_roles_reaction)
+        await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
 
 
     async def on_raw_reaction_remove(self, payload):
-        await self._update_auto_roles(payload, self.roles_source.get_user_auto_roles_unreaction)
+        await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_unreaction)
 
 
     async def _write_to_dedicated_channel(self, message: str):
@@ -118,7 +124,7 @@ class RolesBot(discord.Client):
         guild = self.get_guild(payload.guild_id)
         channel_id = payload.channel_id
 
-        if channel_id in self.auto_roles_channels:
+        if channel_id in self.config.auto_roles_channels:
             member = guild.get_member(payload.user_id)
             self.logger.info(f"Updating auto roles for user {member}")
             message_id = payload.message_id
@@ -172,7 +178,7 @@ class RolesBot(discord.Client):
         for member in members:
             self.logger.debug(f"Processing user {repr(member.name)}")
 
-            roles_to_add, roles_to_remove = self.roles_source.get_user_roles(member)
+            roles_to_add, roles_to_remove = self.config.roles_source.get_user_roles(member)
             self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
 
             added, removed = await self._update_member_roles(member, roles_to_add, roles_to_remove)
