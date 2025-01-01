@@ -63,6 +63,7 @@ class RolesBot(discord.Client):
         self.logger = logger
         self.member_ids_accepted_regulations = []
         self.storage = Configuration(storage_dir, logging.getLogger("Configuration"))
+        self.guild_id = None
 
 
     async def on_ready(self):
@@ -73,6 +74,7 @@ class RolesBot(discord.Client):
             raise RuntimeError(f"Invalid number of guilds: {len(self.guilds)}")
 
         guild = self.guilds[0]
+        self.guild_id = guild.id
         self.channel = await self.fetch_channel(self.config.dedicated_channel)
 
         self.logger.debug(f"Using channel {self.config.dedicated_channel} for notifications")
