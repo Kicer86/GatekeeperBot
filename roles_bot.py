@@ -5,7 +5,9 @@ import logging
 import subprocess
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from discord.utils import escape_markdown
+from discord.ext import tasks
 from enum import Enum
 from typing import Dict, List, Tuple, Set
 
@@ -72,6 +74,7 @@ class RolesBot(discord.Client):
         self.storage = Configuration(storage_dir, logging.getLogger("Configuration"))
         self.guild_id = None
         self.unknown_users = set()
+        self.last_auto_refresh = datetime.now()
 
 
     async def on_ready(self):
@@ -94,6 +97,8 @@ class RolesBot(discord.Client):
         async with self.channel.typing():
             await self._write_to_dedicated_channel(f"Start bota. git commit: {hash}\n")
             await self._update_state()
+
+        self._auto_refresh.start()
 
 
     async def on_message(self, message):
@@ -238,6 +243,18 @@ class RolesBot(discord.Client):
 
         for part in message_splitted:
             await self.channel.send(part)
+
+
+    @tasks.loop(seconds = 60)
+    async def _auto_refresh(self):
+        now = datetime.now()
+        time_since_last_auto_refresh = now - self.last_auto_refresh
+
+        if time_since_last_auto_refresh >= timedelta(hours = 24):
+            self.last_auto_refresh = now
+
+            guild = self.get_guild(self.guild_id)
+            await self._refresh_roles(guild.members)
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
