@@ -140,6 +140,7 @@ class RolesBot(discord.Client):
 
             await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
         else:
+            self.unknown_users.add(member.id)
             config = self.storage.get_config()
 
             unknown_notified_users = config.get("unknown_notified_users", [])
