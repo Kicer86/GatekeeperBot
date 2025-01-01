@@ -6,26 +6,30 @@ import subprocess
 
 from dataclasses import dataclass
 from discord.utils import escape_markdown
+from enum import Enum
 from typing import Dict, List, Tuple, Set
 
 from roles_bot.configuration import Configuration
 
 
+class UserStatusFlags(Enum):
+    Known = 1
+    Accepted = 2
+
+
 class RolesSource:
-    def invalidate_cache(self):                                                             # clear cache
+    def invalidate_cache(self):                                                                                                 # clear cache
         pass
 
-    # methods to be called for known users
-    def get_user_roles(self, member_id: int) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
+    def get_user_roles(self, member_id: int, flags: Dict[UserStatusFlags, bool]) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
         pass
 
-    def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:      # get roles for member who reacted on a message in auto roles channel
+    def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who reacted on a message in auto roles channel
         pass
 
-    def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who unreacted on a message in auto roles channel
+    def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:  # get roles for member who unreacted on a message in auto roles channel
         pass
 
-    # methods for not known yet users
     def is_user_known(self, member: discord.Member) -> bool:
         pass
 
@@ -104,7 +108,12 @@ class RolesBot(discord.Client):
 
                 if command == "refresh":
                     async with self.channel.typing():
-                        await self._refresh_roles(message.guild.members)
+                        if len(args) == 0:
+                            await self._refresh_roles(message.guild.members)
+                        else:
+                            member_ids = [int(id) for id in args]
+                            members = [message.guild.get_member(member_id) for member_id in member_ids]
+                            await self._refresh_roles(members)
                 elif command == "status":
                     async with self.channel.typing():
                         await self._print_status()
@@ -127,13 +136,9 @@ class RolesBot(discord.Client):
     async def on_member_join(self, member):
         self.logger.info(f"New user {repr(member.name)} joining the server.")
 
-        known = self.config.roles_source.is_user_known(member)
+        known = self.config.roles_source.is_user_known(member.id)
         if known:
-            role_to_add = self.config.roles_source.role_for_known_users()
-            self.logger.debug(f"User is known. Adding new role: {role_to_add}")
-
-            added_roles, removed_roles = await self._update_member_roles(member, [role_to_add], [])
-
+            added_roles, removed_roles = await self._update_member_roles(member)
             await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
         else:
             self.unknown_users.add(member.id)
@@ -209,8 +214,9 @@ class RolesBot(discord.Client):
             if len(roles_to_add) == 0 and len(roles_to_remove) == 0:
                 self.logger.warning(f"No roles to be added nor removed were returned after member {member} reaction in auto roles channel for {message.content}.")
 
-            added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, roles_to_remove)
+            added_roles, removed_roles = await self._apply_member_roles(member, roles_to_add, roles_to_remove)
             await self._single_user_report(f"Użytkownik {member} dokonał zmian roli:", added_roles, removed_roles)
+
 
     async def _check_reaction_on_regulations(self, payload, added: bool):
         """
@@ -236,7 +242,17 @@ class RolesBot(discord.Client):
             await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} odrzucił regulamin.")
 
 
-    async def _update_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
+    async def _update_member_roles(self, member: discord.Member) -> Tuple[List, List]:
+        flags = self._build_user_flags(member.id)
+        roles_to_add, roles_to_remove = self.config.roles_source.get_user_roles(member.id, flags)
+        self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
+
+        added, removed = await self._apply_member_roles(member, roles_to_add, roles_to_remove)
+
+        return added, removed
+
+
+    async def _apply_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
         member_roles = member.roles
         member_role_names = {role.name for role in member_roles}
 
@@ -259,31 +275,35 @@ class RolesBot(discord.Client):
             await member.remove_roles(*redundant_ids)
             removed_roles = redundant_roles
 
-        # in case of any role change action, perform a sleep to avoid rate limit
-        if len(missing_roles) > 0 or len(redundant_roles) > 0:
-            await asyncio.sleep(1)
-
         return (added_roles, removed_roles)
 
 
+    def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:
+        flags = {}
+        flags[UserStatusFlags.Known] = False if member_id in self.unknown_users else True
+        flags[UserStatusFlags.Accepted] = True if member_id in self.member_ids_accepted_regulations else False
+        return flags
+
+
     async def _refresh_roles(self, members):
-        self.logger.info("Refreshing roles for all users.")
+        self.logger.info(f"Refreshing roles for {len(members)} users.")
         added_roles = {}
         removed_roles = {}
 
         for member in members:
             self.logger.debug(f"Processing user {repr(member.name)}")
 
-            roles_to_add, roles_to_remove = self.config.roles_source.get_user_roles(member)
-            self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
-
-            added, removed = await self._update_member_roles(member, roles_to_add, roles_to_remove)
+            added, removed = await self._update_member_roles(member)
 
             if len(added) > 0:
                 added_roles[member.name] = added
 
             if len(removed) > 0:
                 removed_roles[member.name] = removed
+
+            if len(added) > 0 and len(removed) > 0:
+                # in case of any role change action, perform a sleep to avoid rate limit
+                await asyncio.sleep(1)
 
         self.logger.info("Print reports")
         message_parts = []
