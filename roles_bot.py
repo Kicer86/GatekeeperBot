@@ -341,14 +341,13 @@ class RolesBot(discord.Client):
         state = "Obecny stan:\n"
 
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
-        state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}"
-        await self._write_to_dedicated_channel(state)
+        state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
-        accepted_regulations = "Użytkownicy którzy zaakceptowali regulamin:\n"
+        state = "Użytkownicy którzy zaakceptowali regulamin:\n"
         allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
-        accepted_regulations += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
+        state += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
 
-        await self._write_to_dedicated_channel(accepted_regulations)
+        await self._write_to_dedicated_channel(state)
 
 
     async def _update_state(self):
