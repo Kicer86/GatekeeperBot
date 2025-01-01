@@ -379,7 +379,7 @@ class RolesBot(discord.Client):
 
             if len(added) > 0 and len(removed) > 0:
                 # in case of any role change action, perform a sleep to avoid rate limit
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.2)
 
         self.logger.info("Print reports")
         message_parts = []
