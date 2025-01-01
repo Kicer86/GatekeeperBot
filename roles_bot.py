@@ -161,9 +161,11 @@ class RolesBot(discord.Client):
 
         known = self.config.roles_source.is_user_known(member.id)
         if known:
+            self.logger.info("User is known")
             added_roles, removed_roles = await self._update_member_roles(member)
             await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
         else:
+            self.logger.info("User is not known")
             self.unknown_users.add(member.id)
             config = self.storage.get_config()
 
