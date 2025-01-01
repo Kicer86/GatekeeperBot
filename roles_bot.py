@@ -171,9 +171,48 @@ class RolesBot(discord.Client):
         await self._check_reaction_on_regulations(payload, False)
 
 
+    def _split_message(self, message: str) -> [str]:
+        fragment_length: int = 2000
+        message_fragments: [str] = []
+        split_priorities = ['\n', '.', ',', ' ']
+
+        begin: int = 0
+        while begin < len(message):
+            fragment = ""
+            end = begin + fragment_length
+
+            if end > len(message):
+                # If we are at the end of the message, take the remaining text
+                fragment = message[begin:]
+            else:
+                # Try to split at the highest-priority character first
+                closest_split = -1
+                for split_char in split_priorities:
+                    closest_split = message.rfind(split_char, begin, end)
+                    if closest_split != -1:
+                        break  # Stop as soon as we find a suitable split point
+
+                if closest_split == -1:
+                    # If no split points are found, fallback to splitting at the limit
+                    fragment = message[begin:end]
+                else:
+                    # Include the splitting character in the fragment
+                    fragment = message[begin:closest_split + 1]
+
+            # Add the fragment to the list and move the pointer
+            message_fragments.append(fragment.strip())
+            begin += len(fragment)
+
+        return message_fragments
+
+
     async def _write_to_dedicated_channel(self, message: str):
         self.logger.debug(f"Sending message {repr(message)}")
-        await self.channel.send(message)
+
+        message_splitted = self._split_message(message)
+
+        for part in message_splitted:
+            await self.channel.send(part)
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
