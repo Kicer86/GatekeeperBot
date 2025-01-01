@@ -150,7 +150,7 @@ class RolesBot(discord.Client):
             else:
                 await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie instrukcji powiązania konta.")
                 await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
-                                    'Twój ID (który będzie trzeba przekopiować) to:\n')
+                                  'Twój ID (który będzie trzeba przekopiować) to:\n')
                 await member.send(f'{member_id}')
 
                 unknown_notified_users.append(member_id)
