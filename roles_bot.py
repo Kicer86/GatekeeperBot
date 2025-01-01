@@ -241,6 +241,9 @@ class RolesBot(discord.Client):
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
+        """
+            Report to dedicated channel about role changes that happened to the member
+        """
         self.logger.info("Print report")
         message_parts = []
 
@@ -263,6 +266,9 @@ class RolesBot(discord.Client):
 
 
     async def _update_auto_roles(self, payload, roles_source):
+        """
+            Apply roles user has chosen by reacting to certain messages
+        """
         guild = self.get_guild(payload.guild_id)
         channel_id = payload.channel_id
 
@@ -310,6 +316,11 @@ class RolesBot(discord.Client):
 
 
     async def _update_member_roles(self, member: discord.Member) -> Tuple[List, List]:
+        """
+            Check what roles should be applied to the single user and applie them.
+
+            This function is meant to be used by one timne actions
+        """
         flags = self._build_user_flags(member.id)
         roles_to_add, roles_to_remove = self.config.roles_source.get_user_roles(member.id, flags)
         self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
@@ -320,6 +331,9 @@ class RolesBot(discord.Client):
 
 
     async def _apply_member_roles(self, member: discord.Member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
+        """
+            Apply given roles to the user
+        """
         member_roles = member.roles
         member_role_names = {role.name for role in member_roles}
 
