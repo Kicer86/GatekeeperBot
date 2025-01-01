@@ -36,6 +36,9 @@ class RolesSource:
     def role_for_known_users(self) -> str:
         pass
 
+    def list_known_users(self) -> Dict[str, any]:
+        pass
+
 
 @dataclass
 class BotConfig:
@@ -131,6 +134,23 @@ class RolesBot(discord.Client):
 
                             self.logger.info(f"Testing on_member_join for member {member.name}")
                             await self.on_member_join(member)
+                elif command == "dump_db":
+                    users_info = self.config.roles_source.list_known_users()
+                    status = "List znanych userów z bazy danych:\n"
+
+                    for user, data in users_info.items():
+                        if user.isnumeric():
+                            # assume id
+                            member_id = int(user)
+                            member = message.guild.get_member(member_id)
+                            status += f"{member.display_name} ({member.name}, {member_id})"
+                        else:
+                            # assume direct user name
+                            status += f"{user}"
+
+                        status += f": {data}\n"
+
+                    await self._write_to_dedicated_channel(status)
 
 
     async def on_member_join(self, member):
