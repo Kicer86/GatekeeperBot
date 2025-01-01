@@ -61,9 +61,10 @@ class RolesBot(discord.Client):
         self.config = config
         self.channel = None
         self.logger = logger
-        self.member_ids_accepted_regulations = []
+        self.member_ids_accepted_regulations = set()
         self.storage = Configuration(storage_dir, logging.getLogger("Configuration"))
         self.guild_id = None
+        self.unknown_users = set()
 
 
     async def on_ready(self):
@@ -82,13 +83,6 @@ class RolesBot(discord.Client):
         for auto_roles_channel in self.config.auto_roles_channels:
             channel = await self.fetch_channel(auto_roles_channel)
             self.logger.debug(f"Auto roles: listening for reactions in channel {channel}")
-
-        regulations_channel = guild.get_channel(self.config.server_regulations_message_id[0])
-        acceptance_message = await regulations_channel.fetch_message(self.config.server_regulations_message_id[1])
-        for reaction in acceptance_message.reactions:
-            emoji = reaction.emoji
-            if str(emoji) == "👍":
-                self.member_ids_accepted_regulations = [user.id async for user in reaction.users()]
 
         async with self.channel.typing():
             bot_status = f"Start bota. git commit: {hash}\n"
@@ -117,12 +111,7 @@ class RolesBot(discord.Client):
                         await self._refresh_roles(message.guild.members)
                 elif command == "status":
                     async with self.channel.typing():
-                        guild = message.guild
-                        message = "Użytkownicy którzy zaakceptowali regulamin:\n"
-                        allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
-                        message += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
-
-                        await self._write_to_dedicated_channel(message)
+                        await self._print_status()
                 elif command == "test" and len(args) > 0:
                     subcommand = args[0]
                     subargs = args[1:]
@@ -296,3 +285,63 @@ class RolesBot(discord.Client):
         final_message = "\n".join(message_parts)
         final_message_escaped = escape_markdown(final_message)
         await self._write_to_dedicated_channel(final_message_escaped)
+
+
+    async def _print_status(self):
+        """
+            Print bot status
+        """
+
+        guild = self.get_guild(self.guild_id)
+        state = "Obecny stan:\n"
+
+        unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
+        state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}"
+        await self._write_to_dedicated_channel(state)
+
+        accepted_regulations = "Użytkownicy którzy zaakceptowali regulamin:\n"
+        allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
+        accepted_regulations += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
+
+        await self._write_to_dedicated_channel(accepted_regulations)
+
+
+    async def _update_state(self):
+        """
+            Method collects and updates bot's information about server state.
+
+            It is meant to be used on bot startup to get the lay of the land.
+            It can also be used by a manual refresh if things get out of sync for any reason.
+        """
+
+        self.unknown_users = self._collect_unknown_users()
+        self.member_ids_accepted_regulations = await self._collect_users_accepting_regulations()
+        await self._print_status()
+
+
+    def _collect_unknown_users(self) -> set[int]:
+        """
+            Method collects unknown users (not recognized by the RolesSource) on the server.
+        """
+
+        known_user_role_name = self.config.roles_source.role_for_known_users()
+        guild = self.get_guild(self.guild_id)
+
+        known_user_role = discord.utils.get(guild.roles, name=known_user_role_name)
+        members_without_role = {member.id for member in guild.members if known_user_role not in member.roles}
+
+        return members_without_role
+
+
+    async def _collect_users_accepting_regulations(self) -> Set[int]:
+        guild = self.get_guild(self.guild_id)
+        regulations_channel = guild.get_channel(self.config.server_regulations_message_id[0])
+        acceptance_message = await regulations_channel.fetch_message(self.config.server_regulations_message_id[1])
+        members = []
+
+        for reaction in acceptance_message.reactions:
+            emoji = reaction.emoji
+            if str(emoji) == "👍":
+                members = {user.id async for user in reaction.users()}
+
+        return members
