@@ -31,7 +31,7 @@ class RolesSource:
     def is_user_known(self, member: discord.Member) -> bool:
         pass
 
-    def roles_for_known_users(self) -> List[str]:
+    def role_for_known_users(self) -> str:
         pass
 
 
@@ -128,10 +128,10 @@ class RolesBot(discord.Client):
 
         known = self.config.roles_source.is_user_known(member)
         if known:
-            roles_to_add = self.config.roles_source.roles_for_known_users()
-            self.logger.debug(f"User is known. Adding new roles: {roles_to_add}")
+            role_to_add = self.config.roles_source.role_for_known_users()
+            self.logger.debug(f"User is known. Adding new role: {role_to_add}")
 
-            added_roles, removed_roles = await self._update_member_roles(member, roles_to_add, [])
+            added_roles, removed_roles = await self._update_member_roles(member, [role_to_add], [])
 
             await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
         else:
