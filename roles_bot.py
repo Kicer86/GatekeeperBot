@@ -2,6 +2,7 @@
 import asyncio
 import discord
 import logging
+import subprocess
 
 from dataclasses import dataclass
 from discord.utils import escape_markdown
@@ -43,6 +44,13 @@ class BotConfig:
     server_regulations_message_id: Tuple[int, int]          # channel id, message id
 
 
+def get_current_commit_hash():
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except subprocess.CalledProcessError:
+        return None
+
+
 class RolesBot(discord.Client):
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
@@ -58,7 +66,8 @@ class RolesBot(discord.Client):
 
 
     async def on_ready(self):
-        self.logger.info(f"Bot is ready as {self.user}")
+        hash = get_current_commit_hash()
+        self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}")
 
         if len(self.guilds) != 1:
             raise RuntimeError(f"Invalid number of guilds: {len(self.guilds)}")
@@ -78,6 +87,10 @@ class RolesBot(discord.Client):
             emoji = reaction.emoji
             if str(emoji) == "👍":
                 self.member_ids_accepted_regulations = [user.id async for user in reaction.users()]
+
+        bot_status = f"Start bota. git commit: {hash}\n"
+        await self._write_to_dedicated_channel(bot_status)
+        await self._update_state()
 
 
     async def on_message(self, message):
