@@ -382,7 +382,7 @@ class RolesBot(discord.Client):
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
         state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
-        state = "Użytkownicy którzy zaakceptowali regulamin:\n"
+        state += "Użytkownicy którzy zaakceptowali regulamin:\n"
         allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
         state += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
 
