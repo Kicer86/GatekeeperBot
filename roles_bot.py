@@ -19,10 +19,7 @@ class RolesSource:
     def prefetch_users_roles(self):                                                         # prepare for massive get_user_roles() calls
         pass
 
-    def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:        # get roles for member. Returns (roles to be added, roles to be removed) which may be cached.
-        pass
-
-    def fetch_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:      # get roles for member. Returns (roles to be added, roles to be removed) omiting cache
+    def get_user_roles(self, member_id: int) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
         pass
 
     def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:      # get roles for member who reacted on a message in auto roles channel
