@@ -453,6 +453,10 @@ class RolesBot(discord.Client):
         allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
         state += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
 
+        state += "\n"
+        time_left =  timedelta(hours = 24) - (datetime.now() - self.last_auto_refresh)
+        state += f"Czas do automatycznego odświeżenia ról: {time_left}"
+
         await self._write_to_dedicated_channel(state)
 
 
