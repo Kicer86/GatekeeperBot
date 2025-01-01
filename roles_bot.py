@@ -350,15 +350,26 @@ class RolesBot(discord.Client):
         return flags
 
 
-    async def _refresh_roles(self, members):
+    async def _refresh_roles(self, members: List[discord.Member]):
+        """
+            Iterate over given set of members and update their roles.
+        """
         self.logger.info(f"Refreshing roles for {len(members)} users.")
         added_roles = {}
         removed_roles = {}
+        guild = self.get_guild(self.guild_id)
 
-        for member in members:
+        users_query = {member.id: self._build_user_flags(member.id) for member in members}
+        new_roles = self.config.roles_source.get_users_roles(users_query)
+
+        for member_id, roles in new_roles.items():
+            member = guild.get_member(member_id)
             self.logger.debug(f"Processing user {repr(member.name)}")
 
-            added, removed = await self._update_member_roles(member)
+            add = roles[0]
+            remove = roles[1]
+
+            added, removed = await self._apply_member_roles(member, add, remove)
 
             if len(added) > 0:
                 added_roles[member.name] = added
