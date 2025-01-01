@@ -90,9 +90,10 @@ class RolesBot(discord.Client):
             if str(emoji) == "👍":
                 self.member_ids_accepted_regulations = [user.id async for user in reaction.users()]
 
-        bot_status = f"Start bota. git commit: {hash}\n"
-        await self._write_to_dedicated_channel(bot_status)
-        await self._update_state()
+        async with self.channel.typing():
+            bot_status = f"Start bota. git commit: {hash}\n"
+            await self._write_to_dedicated_channel(bot_status)
+            await self._update_state()
 
 
     async def on_message(self, message):
