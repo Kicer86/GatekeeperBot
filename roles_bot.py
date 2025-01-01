@@ -241,6 +241,9 @@ class RolesBot(discord.Client):
             self.member_ids_accepted_regulations.remove(member.id)
             await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} odrzucił regulamin.")
 
+        added_roles, removed_roles = await self._update_member_roles(member)
+        await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
+
 
     async def _update_member_roles(self, member: discord.Member) -> Tuple[List, List]:
         flags = self._build_user_flags(member.id)
@@ -252,7 +255,7 @@ class RolesBot(discord.Client):
         return added, removed
 
 
-    async def _apply_member_roles(self, member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
+    async def _apply_member_roles(self, member: discord.Member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
         member_roles = member.roles
         member_role_names = {role.name for role in member_roles}
 
