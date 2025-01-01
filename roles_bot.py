@@ -24,6 +24,9 @@ class RolesSource:
     def get_user_roles(self, member_id: int, flags: Dict[UserStatusFlags, bool]) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
         pass
 
+    def get_users_roles(self, member_ids: Dict[int, Dict[UserStatusFlags, bool]]) -> Dict[int, Tuple[List[str], List[str]]]:    # get roles for members. Returns dict of surest with tupe og roles to be added and roles to be removed
+        pass
+
     def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who reacted on a message in auto roles channel
         pass
 
