@@ -16,6 +16,9 @@ class RolesSource:
         pass
 
     # methods to be called for known users
+    def prefetch_users_roles(self):                                                         # prepare for massive get_user_roles() calls
+        pass
+
     def get_user_roles(self, member: discord.Member) -> Tuple[List[str], List[str]]:        # get roles for member. Returns (roles to be added, roles to be removed) which may be cached.
         pass
 
