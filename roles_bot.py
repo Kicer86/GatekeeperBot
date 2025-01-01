@@ -334,6 +334,9 @@ class RolesBot(discord.Client):
 
 
     async def _collect_users_accepting_regulations(self) -> Set[int]:
+        """
+            Collect users who accepted regulations
+        """
         guild = self.get_guild(self.guild_id)
         regulations_channel = guild.get_channel(self.config.server_regulations_message_id[0])
         acceptance_message = await regulations_channel.fetch_message(self.config.server_regulations_message_id[1])
