@@ -121,9 +121,13 @@ class RolesBot(discord.Client):
                         if len(args) == 0:
                             await self._refresh_roles(message.guild.members)
                         else:
-                            member_ids = [int(id) for id in args]
-                            members = [message.guild.get_member(member_id) for member_id in member_ids]
-                            await self._refresh_roles(members)
+                            try:
+                                member_ids = [int(id) for id in args]
+                            except ValueError:
+                                await self._write_to_dedicated_channel("Argumenty muszą być numerami ID")
+                            else:
+                                members = [message.guild.get_member(member_id) for member_id in member_ids]
+                                await self._refresh_roles(members)
                 elif command == "status":
                     async with self.channel.typing():
                         await self._print_status()
@@ -176,11 +180,13 @@ class RolesBot(discord.Client):
                 elif command == "help":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Dostepne polecenia:\n"
+                                                               "```\n"
                                                                "refresh [ID1 ID2 ...]  - odświeża role użytkowników których ID podane są jako argumenty. Przy braku argumentów odświeżani są wszyscy.\n"
                                                                "status                 - wyświetla stan bota\n"
                                                                "test newuser @user     - testuje procedurę dołączenia nowego użytkownika na użytkowniku @user\n"
                                                                "dump_db                - zrzuca treść bazy danych\n"
                                                                "set autorefresh czas   - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
+                                                               "```"
                                                               )
 
     async def on_member_join(self, member: discord.Member):
