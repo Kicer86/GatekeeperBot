@@ -162,13 +162,26 @@ class RolesBot(discord.Client):
                     subcommand = args[0]
                     subargs = args[1:]
                     if subcommand == "autorefresh" and len(subargs) == 1:
-                        autorefresh = int(subargs[0])
-                        if autorefresh > 5:
-                            config = self.storage.get_config()
-                            current_value = config[RolesBot.AutoRefreshEntry]
-                            config[RolesBot.AutoRefreshEntry] = autorefresh
-                            self.storage.set_config(config)
-                            self.logger.info(f"Changing auto refresh {current_value} -> {autorefresh} minutes")
+                        async with self.channel.typing():
+                            autorefresh = int(subargs[0])
+                            if autorefresh >= 5:
+                                config = self.storage.get_config()
+                                current_value = config[RolesBot.AutoRefreshEntry]
+                                config[RolesBot.AutoRefreshEntry] = autorefresh
+                                self.storage.set_config(config)
+                                self.logger.info(f"Changing auto refresh {current_value} -> {autorefresh} minutes")
+                                await self._write_to_dedicated_channel(f"Częstotliwość odświeżania zmieniona na {autorefresh} minut")
+                            else:
+                                await self._write_to_dedicated_channel(f"Daj minimum 5 minut")
+                elif command == "help":
+                    async with self.channel.typing():
+                        await self._write_to_dedicated_channel("Dostepne polecenia:\n"
+                                                               "refresh [ID1 ID2 ...]  - odświeża role użytkowników których ID podane są jako argumenty. Przy braku argumentów odświeżani są wszyscy.\n"
+                                                               "status                 - wyświetla stan bota\n"
+                                                               "test newuser @user     - testuje procedurę dołączenia nowego użytkownika na użytkowniku @user\n"
+                                                               "dump_db                - zrzuca treść bazy danych\n"
+                                                               "set autorefresh czas   - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
+                                                              )
 
     async def on_member_join(self, member: discord.Member):
         self.logger.info(f"New user {repr(member.name)} joining the server.")
