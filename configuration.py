@@ -31,6 +31,12 @@ class Configuration:
         self.timer = threading.Timer(5, self._save_config)
         self.timer.start()
 
+    def set_default(self, entry: str, default_value: any):
+        config = self.get_config()
+        value = config.get(entry, default_value)
+        config[entry] = value
+        self.set_config(config)
+
     def _load_config(self):
         self.logger.info("loading config")
         if not os.path.isfile(self.path):
