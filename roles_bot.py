@@ -32,9 +32,6 @@ class RolesSource:
     def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:  # get roles for member who unreacted on a message in auto roles channel
         pass
 
-    def is_user_known(self, member: discord.Member) -> bool:
-        pass
-
     def role_for_known_users(self) -> str:
         pass
 
@@ -158,14 +155,20 @@ class RolesBot(discord.Client):
                     await self._write_to_dedicated_channel(status)
 
 
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         self.logger.info(f"New user {repr(member.name)} joining the server.")
 
-        known = self.config.roles_source.is_user_known(member.id)
+        added_roles, removed_roles = await self._update_member_roles(member)
+        await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
+
+        user_roles = member.roles
+        user_roles_names = [role.name for role in user_roles]
+        known_users_role = self.config.roles_source.role_for_known_users()
+
+        known = True if known_users_role in user_roles_names else False
+
         if known:
             self.logger.info("User is known")
-            added_roles, removed_roles = await self._update_member_roles(member)
-            await self._single_user_report(f"Aktualizacja ról nowego użytkownika {member.name} zakończona.", added_roles, removed_roles)
         else:
             self.logger.info("User is not known")
             self.unknown_users.add(member.id)
