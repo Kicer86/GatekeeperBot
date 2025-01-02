@@ -16,7 +16,7 @@ class Configuration:
         self.timer = None
         self.path = os.path.join(dir, Configuration.config_file)
 
-    def get_config(self):
+    def get_config(self) -> Dict(str, any):
         if self.config is None:
             self.config = self._load_config()
 
