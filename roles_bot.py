@@ -106,7 +106,7 @@ class RolesBot(discord.Client):
             message_content = message.content.strip()
             bot_mention = f"<@{self.user.id}>"
             if message_content.startswith(bot_mention):
-                if not any(role.name == "Administrator" for role in message.author.roles):
+                if not any(role.name in ["Administrator", "Moderator", "Zarząd", "Koordynator"] for role in message.author.roles):
                     await message.channel.send("Tylko administrator może wydawać polecenia.")
                     return
 
