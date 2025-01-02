@@ -55,6 +55,8 @@ def get_current_commit_hash():
 
 
 class RolesBot(discord.Client):
+    AutoRefreshEntry = "autorefresh"
+
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
         intents.message_content = True
@@ -69,6 +71,9 @@ class RolesBot(discord.Client):
         self.guild_id = None
         self.unknown_users = set()
         self.last_auto_refresh = datetime.now()
+
+        # setup default values in config
+        self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
 
 
     async def on_ready(self):
@@ -153,7 +158,17 @@ class RolesBot(discord.Client):
                         status += f": {data}\n"
 
                     await self._write_to_dedicated_channel(status)
-
+                elif command == "set" and len(args) > 0:
+                    subcommand = args[0]
+                    subargs = args[1:]
+                    if subcommand == "autorefresh" and len(subargs) == 1:
+                        autorefresh = int(subargs[0])
+                        if autorefresh > 5:
+                            config = self.storage.get_config()
+                            current_value = config[RolesBot.AutoRefreshEntry]
+                            config[RolesBot.AutoRefreshEntry] = autorefresh
+                            self.storage.set_config(config)
+                            self.logger.info(f"Changing auto refresh {current_value} -> {autorefresh} minutes")
 
     async def on_member_join(self, member: discord.Member):
         self.logger.info(f"New user {repr(member.name)} joining the server.")
@@ -250,7 +265,9 @@ class RolesBot(discord.Client):
         now = datetime.now()
         time_since_last_auto_refresh = now - self.last_auto_refresh
 
-        if time_since_last_auto_refresh >= timedelta(hours = 24):
+        refresh_delta = self.storage.get_config()[RolesBot.AutoRefreshEntry]
+
+        if time_since_last_auto_refresh >= timedelta(minutes = refresh_delta):
             self.last_auto_refresh = now
 
             guild = self.get_guild(self.guild_id)
@@ -454,8 +471,10 @@ class RolesBot(discord.Client):
         state += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
 
         state += "\n"
-        time_left =  timedelta(hours = 24) - (datetime.now() - self.last_auto_refresh)
-        state += f"Czas do automatycznego odświeżenia ról: {time_left}"
+        autorefresh = self.storage.get_config()[RolesBot.AutoRefreshEntry]
+        time_left =  timedelta(minutes = autorefresh) - (datetime.now() - self.last_auto_refresh)
+        state += f"Czas do automatycznego odświeżenia ról: {time_left}\n"
+        state += f"Częstotliwość odświeżenia: {autorefresh} minut\n"
 
         await self._write_to_dedicated_channel(state)
 
