@@ -45,6 +45,7 @@ class BotConfig:
     roles_source: RolesSource
     auto_roles_channels: List[int]                          # channel ids
     server_regulations_message_id: Tuple[int, int]          # channel id, message id
+    user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
 
 
 def get_current_commit_hash():
@@ -228,6 +229,7 @@ class RolesBot(discord.Client):
     async def on_raw_reaction_add(self, payload):
         await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
         await self._check_reaction_on_regulations(payload, True)
+        await self._check_autorefresh(payload)
 
 
     async def on_raw_reaction_remove(self, payload):
@@ -366,6 +368,26 @@ class RolesBot(discord.Client):
 
         added_roles, removed_roles = await self._update_member_roles(member)
         await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
+
+
+    async def _check_autorefresh(self, payload):
+        """
+            Check if reaction happened on roles autorefresh message, and do refresh if it did
+        """
+        channel_id = payload.channel_id
+        if channel_id != self.config.user_auto_refresh_roles_message_id[0]:
+            return
+
+        message_id = payload.message_id
+        if message_id != self.config.user_auto_refresh_roles_message_id[1]:
+            return
+
+        guild = self.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        self.logger.info(f"User {member.name} reacted on autorefresh message.")
+
+        added_roles, removed_roles = await self._update_member_roles(member)
+        await self._single_user_report(f"Użytkownik {member.display_name} zareagował na wiadomość autoodświeżenia ról.", added_roles, removed_roles)
 
 
     async def _update_member_roles(self, member: discord.Member) -> Tuple[List, List]:
