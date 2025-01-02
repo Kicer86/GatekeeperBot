@@ -46,6 +46,7 @@ class BotConfig:
     auto_roles_channels: List[int]                          # channel ids
     server_regulations_message_id: Tuple[int, int]          # channel id, message id
     user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
+    guild_id: int                                           # allowed guild ID
 
 
 def get_current_commit_hash():
@@ -82,10 +83,18 @@ class RolesBot(discord.Client):
         self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}")
 
         if len(self.guilds) != 1:
-            raise RuntimeError(f"Invalid number of guilds: {len(self.guilds)}")
+            self.logger.error(f"Invalid number of guilds: {len(self.guilds)}")
+            await self.close()
+            return
 
         guild = self.guilds[0]
         self.guild_id = guild.id
+
+        if self.guild_id != self.config.guild_id:
+            self.logger.error(f"Leaving unauthorized guild: {guild.name} ({guild.id})")
+            await guild.leave()
+            return
+
         self.channel = await self.fetch_channel(self.config.dedicated_channel)
 
         self.logger.debug(f"Using channel {self.config.dedicated_channel} for notifications")
@@ -99,6 +108,12 @@ class RolesBot(discord.Client):
             await self._update_state()
 
         self._auto_refresh.start()
+
+
+    async def on_guild_join(self, guild):
+        if guild.id != self.config.guild_id:
+            self.logger.error(f"Leaving unauthorized guild: {guild.name} ({guild.id})")
+            await guild.leave()
 
 
     async def on_message(self, message):
