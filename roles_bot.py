@@ -105,9 +105,17 @@ class RolesBot(discord.Client):
         if self.user in message.mentions:
             message_content = message.content.strip()
             bot_mention = f"<@{self.user.id}>"
+
+            author = message.author
+            guild = self.get_guild(self.guild_id)
+            guild_member = guild.get_member(author.id)
+
+            if guild_member is None:
+                return
+
             if message_content.startswith(bot_mention):
-                if not any(role.name in ["Administrator", "Moderator", "Zarząd", "Koordynator"] for role in message.author.roles):
-                    await message.channel.send("Tylko administrator może wydawać polecenia.")
+                if not any(role.name in ["Administrator", "Moderator", "Zarząd", "Koordynator"] for role in guild_member.roles):
+                    self.logger.warning(f"User {author.name} has no rights to use bot.")
                     return
 
                 whole_command = message_content[len(bot_mention):].strip()
@@ -120,14 +128,14 @@ class RolesBot(discord.Client):
                 if command == "refresh":
                     async with self.channel.typing():
                         if len(args) == 0:
-                            await self._refresh_roles(message.guild.members)
+                            await self._refresh_roles(guild.members)
                         else:
                             try:
                                 member_ids = [int(id) for id in args]
                             except ValueError:
                                 await self._write_to_dedicated_channel("Argumenty muszą być numerami ID")
                             else:
-                                members = [message.guild.get_member(member_id) for member_id in member_ids]
+                                members = [guild.get_member(member_id) for member_id in member_ids]
                                 await self._refresh_roles(members)
                 elif command == "status":
                     async with self.channel.typing():
@@ -142,7 +150,7 @@ class RolesBot(discord.Client):
                             if user_id.startswith('!'):  # Handles the '!'-prefixed mention for nicknames
                                 user_id = user_id[1:]
                             member_id = int(user_id)
-                            member = message.guild.get_member(member_id)
+                            member = guild.get_member(member_id)
 
                             self.logger.info(f"Testing on_member_join for member {member.name}")
                             await self.on_member_join(member)
@@ -154,7 +162,7 @@ class RolesBot(discord.Client):
                         if user.isnumeric():
                             # assume id
                             member_id = int(user)
-                            member = message.guild.get_member(member_id)
+                            member = guild.get_member(member_id)
                             status += f"{member.display_name} ({member.name}, {member_id})"
                         else:
                             # assume direct user name
