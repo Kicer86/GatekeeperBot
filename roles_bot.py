@@ -116,23 +116,27 @@ class RolesBot(discord.Client):
             await guild.leave()
 
 
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
+        author = message.author
+        message_guild = message.guild
+        if message_guild is None:
+            self.logger.info(f"Ignoring private message from user {repr(author.name)}: {repr(message.content)}")
+            return
+
+        if message_guild.id != self.guild_id:
+            self.logger.error(f"Got message from guild '{message_guild}', which is not the current one. This should never happen.")
+            return
+
         if self.user in message.mentions:
             message_content = message.content.strip()
             bot_mention = f"<@{self.user.id}>"
 
-            author = message.author
-            guild = self.get_guild(self.guild_id)
-            guild_member = guild.get_member(author.id)
-
-            if guild_member is None:
-                return
-
             if message_content.startswith(bot_mention):
-                if not any(role.name in ["Administrator", "Moderator", "Zarząd", "Koordynator"] for role in guild_member.roles):
+                if not any(role.name in ["Administrator", "Moderator", "Zarząd", "Koordynator"] for role in author.roles):
                     self.logger.warning(f"User {author.name} has no rights to use bot.")
                     return
 
+                guild = message_guild
                 whole_command = message_content[len(bot_mention):].strip()
                 command_splitted = whole_command.split(" ")
                 command = command_splitted[0]
