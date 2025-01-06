@@ -529,14 +529,37 @@ class RolesBot(discord.Client):
         """
 
         guild = self.get_guild(self.guild_id)
+
+        async def build_user_detaild(id: int) -> str:
+            result: str = ""
+            exists = True
+            is_on_server = True
+            member = guild.get_member(id)
+
+            if member is None:
+                try:
+                    member = await self.fetch_user(id)
+                    is_on_server = False
+                except discord.NotFound:
+                    exists = False
+
+            status = ":green_circle:" if is_on_server else ":red_circle:"
+
+            if member is None:
+                result = f":black_circle:{id}"
+            else:
+                result = f"{status}{member.display_name} ({member.name})"
+
+            return result
+
         state = "Obecny stan:\n"
 
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
         state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
         state += "Użytkownicy którzy zaakceptowali regulamin:\n"
-        allowed_members = map(guild.get_member, self.member_ids_accepted_regulations)
-        state += ", ".join(map(lambda m: f"{m.display_name} ({m.name})", allowed_members))
+        allowed_members = list(map(build_user_detaild, self.member_ids_accepted_regulations))
+        state += ", ".join(await asyncio.gather(*allowed_members))
 
         state += "\n"
         autorefresh = self.storage.get_config()[RolesBot.AutoRefreshEntry]
