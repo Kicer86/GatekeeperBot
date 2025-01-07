@@ -418,6 +418,17 @@ class RolesBot(discord.Client):
         added_roles, removed_roles = await self._update_member_roles(member)
         await self._single_user_report(f"Użytkownik {member.display_name} zareagował na wiadomość autoodświeżenia ról.", added_roles, removed_roles)
 
+        #  At this point user should be allowed to accept regulations.
+        #  Send private message to remind user about it
+        flags = self._build_user_flags(member.id)
+        known = flags[UserStatusFlags.Known]
+        accepted = flags[UserStatusFlags.Accepted]
+
+        if known and not accepted:
+            self.logger.info(f"User {member.name} is known but has not accepted regulations yet. Sending reminder.")
+            await self._write_to_dedicated_channel(f"Wysyłanie przypomnienia użytkownikowi {member.display_name} ({member.name}) o akceptacji regulaminu.")
+            await member.send("Został Ci przyznany dostęp do serwera. Teraz tylko przeczytaj i **zaakceptuj** regulamin, aby w pełni korzystać z dostępnych kanałów")
+
 
     async def _update_member_roles(self, member: discord.Member) -> Tuple[List, List]:
         """
