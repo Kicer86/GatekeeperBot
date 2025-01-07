@@ -432,7 +432,7 @@ class RolesBot(discord.Client):
 
     async def _update_member_roles(self, member: discord.Member) -> Tuple[List, List]:
         """
-            Check what roles should be applied to the single user and applie them.
+            Check what roles should be applied to the single user and apply them.
 
             This function is meant to be used by one timne actions
         """
