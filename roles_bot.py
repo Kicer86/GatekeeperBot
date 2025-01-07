@@ -316,6 +316,8 @@ class RolesBot(discord.Client):
         refresh_delta = self.storage.get_config()[RolesBot.AutoRefreshEntry]
 
         if time_since_last_auto_refresh >= timedelta(minutes = refresh_delta):
+            self.logger.info("Auto refresh condition triggered")
+            await self._write_to_dedicated_channel("Automatyczne odświeżanie ról (timer event).")
             self.last_auto_refresh = now
 
             guild = self.get_guild(self.guild_id)
