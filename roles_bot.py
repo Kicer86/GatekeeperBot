@@ -181,8 +181,8 @@ class RolesBot(discord.Client):
                         if user.isnumeric():
                             # assume id
                             member_id = int(user)
-                            member = guild.get_member(member_id)
-                            status += f"{member.display_name} ({member.name}, {member_id})"
+                            member_details = await self._build_user_details(guild, member_id)
+                            status += member_details
                         else:
                             # assume direct user name
                             status += f"{user}"
@@ -536,6 +536,29 @@ class RolesBot(discord.Client):
         await self._write_to_dedicated_channel(final_message_escaped)
 
 
+    async def _build_user_details(self, guild: discord.Guild, id: int) -> str:
+        result: str = ""
+        exists = True
+        is_on_server = True
+        member = guild.get_member(id)
+
+        if member is None:
+            try:
+                member = await self.fetch_user(id)
+                is_on_server = False
+            except discord.NotFound:
+                exists = False
+
+        status = ":green_circle:" if is_on_server else ":red_circle:"
+
+        if member is None:
+            result = f":black_circle:{id}"
+        else:
+            result = f"{status} {member.display_name} ({member.name})"
+
+        return result
+
+
     async def _print_status(self):
         """
             Print bot status
@@ -543,35 +566,13 @@ class RolesBot(discord.Client):
 
         guild = self.get_guild(self.guild_id)
 
-        async def build_user_details(id: int) -> str:
-            result: str = ""
-            exists = True
-            is_on_server = True
-            member = guild.get_member(id)
-
-            if member is None:
-                try:
-                    member = await self.fetch_user(id)
-                    is_on_server = False
-                except discord.NotFound:
-                    exists = False
-
-            status = ":green_circle:" if is_on_server else ":red_circle:"
-
-            if member is None:
-                result = f":black_circle:{id}"
-            else:
-                result = f"{status} {member.display_name} ({member.name})"
-
-            return result
-
         state = "Obecny stan:\n"
 
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
         state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
         state += "Użytkownicy którzy zaakceptowali regulamin:\n"
-        allowed_members = list(map(build_user_details, self.member_ids_accepted_regulations))
+        allowed_members = list(map(lambda id: self._build_user_details(guild, id), self.member_ids_accepted_regulations))
         state += ", ".join(await asyncio.gather(*allowed_members))
 
         state += "\n"
