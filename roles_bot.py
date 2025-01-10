@@ -39,10 +39,16 @@ class RolesSource:
         pass
 
 
+class NicknamesSource:
+    def get_nickname_for(self, member_id) -> str:
+        pass
+
+
 @dataclass
 class BotConfig:
     dedicated_channel: int                                  # channel id
     roles_source: RolesSource
+    nicknames_source: NicknamesSource
     auto_roles_channels: List[int]                          # channel ids
     server_regulations_message_id: Tuple[int, int]          # channel id, message id
     user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
