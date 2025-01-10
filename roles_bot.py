@@ -272,7 +272,7 @@ class RolesBot(discord.Client):
 
 
     def _split_message(self, message: str) -> [str]:
-        fragment_length: int = 2000
+        fragment_length: int = 2000 - len(self.message_prefix) - 1
         message_fragments: [str] = []
         split_priorities = ['\n', '.', ',', ' ']
 
