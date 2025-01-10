@@ -543,7 +543,7 @@ class RolesBot(discord.Client):
 
         guild = self.get_guild(self.guild_id)
 
-        async def build_user_detaild(id: int) -> str:
+        async def build_user_details(id: int) -> str:
             result: str = ""
             exists = True
             is_on_server = True
@@ -561,7 +561,7 @@ class RolesBot(discord.Client):
             if member is None:
                 result = f":black_circle:{id}"
             else:
-                result = f"{status}{member.display_name} ({member.name})"
+                result = f"{status} {member.display_name} ({member.name})"
 
             return result
 
@@ -571,7 +571,7 @@ class RolesBot(discord.Client):
         state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
         state += "Użytkownicy którzy zaakceptowali regulamin:\n"
-        allowed_members = list(map(build_user_detaild, self.member_ids_accepted_regulations))
+        allowed_members = list(map(build_user_details, self.member_ids_accepted_regulations))
         state += ", ".join(await asyncio.gather(*allowed_members))
 
         state += "\n"
