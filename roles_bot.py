@@ -79,6 +79,7 @@ class RolesBot(discord.Client):
         self.guild_id = None
         self.unknown_users = set()
         self.last_auto_refresh = datetime.now()
+        self.message_prefix = self.storage.get_config().get("message_prefix", "")
 
         # setup default values in config
         self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
@@ -310,8 +311,10 @@ class RolesBot(discord.Client):
 
         message_splitted = self._split_message(message)
 
+        prefix = "" if self.message_prefix == "" else self.message_prefix + " "
+
         for part in message_splitted:
-            await self.channel.send(part)
+            await self.channel.send(prefix + part)
 
 
     @tasks.loop(seconds = 60)
