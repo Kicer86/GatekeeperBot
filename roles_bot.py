@@ -43,6 +43,9 @@ class NicknamesSource:
     def get_nickname_for(self, member_id) -> str:
         pass
 
+    def get_all_nicknames(self) -> Dict[str, str]:
+        pass
+
 
 @dataclass
 class BotConfig:
@@ -181,10 +184,11 @@ class RolesBot(discord.Client):
                             self.logger.info(f"Testing on_member_join for member {member.name}")
                             await self.on_member_join(member)
                 elif command == "dump_db":
-                    users_info = self.config.roles_source.list_known_users()
+                    users_membership = self.config.roles_source.list_known_users()
+                    users_names =  self.config.nicknames_source.get_all_nicknames()
                     status = "List znanych userów z bazy danych:\n"
 
-                    for user, data in users_info.items():
+                    for user, data in users_membership.items():
                         if user.isnumeric():
                             # assume id
                             member_id = int(user)
@@ -194,7 +198,9 @@ class RolesBot(discord.Client):
                             # assume direct user name
                             status += f"{user}"
 
-                        status += f": {data}\n"
+                        nickname = users_names.get(user, None)
+                        display_nickname = "EMPTY" if nickname is None else "\\*" * len(nickname)
+                        status += f": {data} -> {display_nickname}\n"
 
                     await self._write_to_dedicated_channel(status)
                 elif command == "set" and len(args) > 0:
