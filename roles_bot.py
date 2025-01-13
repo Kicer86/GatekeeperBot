@@ -53,7 +53,7 @@ class BotConfig:
     roles_source: RolesSource
     nicknames_source: NicknamesSource
     auto_roles_channels: List[int]                          # channel ids
-    server_regulations_message_id: Tuple[int, int]          # channel id, message id
+    server_regulations_message_ids: List[Tuple[int, int]]   # list of (channel id, message id)
     user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
     guild_id: int                                           # allowed guild ID
 
@@ -392,26 +392,43 @@ class RolesBot(discord.Client):
             Check if reaction happened on regulations acceptance message and react accordingly if so
         """
         channel_id = payload.channel_id
-        if channel_id != self.config.server_regulations_message_id[0]:
-            return
-
         message_id = payload.message_id
-        if message_id != self.config.server_regulations_message_id[1]:
+
+        full_id = (channel_id, message_id)
+
+        if full_id not in self.config.server_regulations_message_ids:
             return
 
         guild = self.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
-        self.logger.info(f"User {member.name} reacted on regulations message")
+        self.logger.info(f"User {member.name} reacted on regulations message: {channel_id}/{message_id}")
 
-        if added:
-            self.member_ids_accepted_regulations.add(member.id)
-            await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} zaakceptował regulamin.")
-        else:
-            self.member_ids_accepted_regulations.remove(member.id)
-            await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} odrzucił regulamin.")
+        current_list_of_users = self.member_ids_accepted_regulations
+        new_list_of_users = await self._collect_users_who_accepted_all_regulations()
 
-        added_roles, removed_roles = await self._update_member_roles(member)
-        await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
+        removed_acceptance = current_list_of_users - new_list_of_users
+        added_acceptance = new_list_of_users - current_list_of_users
+
+        self.member_ids_accepted_regulations = new_list_of_users
+
+        affected_users = []
+
+        for added in added_acceptance:
+            member = guild.get_member(added)
+            await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} zaakceptował regulamin w całości.")
+            affected_users.append(member)
+
+        for removed in removed_acceptance:
+            member = guild.get_member(removed)
+            await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} odrzucił regulamin (lub jego fragment).")
+            affected_users.append(member)
+
+        if len(affected_users) > 1:
+            self.logger.warning(f"There was one change expected, yet got {len(affected_users)}")
+
+        for member in affected_users:
+            added_roles, removed_roles = await self._update_member_roles(member)
+            await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
 
 
     async def _check_autorefresh(self, payload):
@@ -593,7 +610,7 @@ class RolesBot(discord.Client):
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
         state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
-        state += "Użytkownicy którzy zaakceptowali regulamin:\n"
+        state += "Użytkownicy którzy zaakceptowali wszystkie częsci regulaminu:\n"
         allowed_members = list(map(lambda id: self._build_user_details(guild, id), self.member_ids_accepted_regulations))
         state += ", ".join(await asyncio.gather(*allowed_members))
 
@@ -610,8 +627,9 @@ class RolesBot(discord.Client):
         autorefresh_string = self._generate_link(self.config.user_auto_refresh_roles_message_id)
         state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
 
-        regulations_string = self._generate_link(self.config.server_regulations_message_id)
-        state += f"Wiadomość regulaminu: {regulations_string}\n"
+        regulations_urls = [self._generate_link(id) for id in self.config.server_regulations_message_ids]
+        regulations_string = " ".join(regulations_urls)
+        state += f"Wiadomości regulaminu do zaakceptowania: {regulations_string}\n"
 
         await self._write_to_dedicated_channel(state)
 
@@ -625,7 +643,7 @@ class RolesBot(discord.Client):
         """
 
         self.unknown_users = self._collect_unknown_users()
-        self.member_ids_accepted_regulations = await self._collect_users_accepting_regulations()
+        self.member_ids_accepted_regulations = await self._collect_users_who_accepted_all_regulations()
         await self._print_status()
 
 
@@ -643,18 +661,27 @@ class RolesBot(discord.Client):
         return members_without_role
 
 
-    async def _collect_users_accepting_regulations(self) -> Set[int]:
+    async def _collect_users_who_accepted_all_regulations(self) -> Set[int]:
         """
             Collect users who accepted regulations
         """
         guild = self.get_guild(self.guild_id)
-        regulations_channel = guild.get_channel(self.config.server_regulations_message_id[0])
-        acceptance_message = await regulations_channel.fetch_message(self.config.server_regulations_message_id[1])
-        members = []
 
-        for reaction in acceptance_message.reactions:
-            emoji = reaction.emoji
-            if str(emoji) == "👍":
-                members = {user.id async for user in reaction.users()}
+        accepted_messages = []
 
-        return members
+        for channel_id, message_id in self.config.server_regulations_message_ids:
+            regulations_channel = guild.get_channel(channel_id)
+            acceptance_message = await regulations_channel.fetch_message(message_id)
+
+            members = set()
+
+            for reaction in acceptance_message.reactions:
+                emoji = reaction.emoji
+                if str(emoji) == "👍":
+                    members = {user.id async for user in reaction.users()}
+
+            accepted_messages.append(members)
+
+        members_who_accepted_all = set.intersection(*accepted_messages)
+
+        return members_who_accepted_all
