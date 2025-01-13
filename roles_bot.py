@@ -575,7 +575,7 @@ class RolesBot(discord.Client):
 
 
     def _generate_link(self, items):
-        leaf = "/".join(items) if isinstance(items, tuple) else items
+        leaf = "/".join(map(str, items)) if isinstance(items, tuple) else items
         url = f"https://discord.com/channels/{self.guild_id}/{leaf}"
 
         return url
