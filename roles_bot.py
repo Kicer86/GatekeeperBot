@@ -603,6 +603,16 @@ class RolesBot(discord.Client):
         state += f"Czas do automatycznego odświeżenia ról: {time_left}\n"
         state += f"Częstotliwość odświeżenia: {autorefresh} minut\n"
 
+        autoroles_urls = [self._generate_link(id) for id in self.config.auto_roles_channels]
+        autoroles_string = " ".join(autoroles_urls)
+        state += f"Obserwowane kanały z autorolami: {autoroles_string}\n"
+
+        autorefresh_string = self._generate_link(self.config.user_auto_refresh_roles_message_id)
+        state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
+
+        regulations_string = self._generate_link(self.config.server_regulations_message_id)
+        state += f"Wiadomość regulaminu: {regulations_string}\n"
+
         await self._write_to_dedicated_channel(state)
 
 
