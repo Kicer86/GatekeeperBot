@@ -40,7 +40,7 @@ class RolesSource:
 
 
 class NicknamesSource:
-    def get_nickname_for(self, member_id) -> str:
+    def get_nicknames_for(self, member_ids: List[int]) -> Dict[str, str]:
         pass
 
     def get_all_nicknames(self) -> Dict[str, str]:
@@ -166,6 +166,7 @@ class RolesBot(discord.Client):
                             else:
                                 members = [guild.get_member(member_id) for member_id in member_ids]
                                 await self._refresh_roles(members)
+                                await self._refresh_names(member_ids)
                 elif command == "status":
                     async with self.channel.typing():
                         await self._print_status()
@@ -337,6 +338,8 @@ class RolesBot(discord.Client):
 
             guild = self.get_guild(self.guild_id)
             await self._refresh_roles(guild.members)
+            user_ids = [member.id for member in guild.members]
+            await self._refresh_names(user_ids)
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
@@ -566,6 +569,25 @@ class RolesBot(discord.Client):
         final_message = "\n".join(message_parts)
         final_message_escaped = escape_markdown(final_message)
         await self._write_to_dedicated_channel(final_message_escaped)
+
+
+    async def _refresh_names(self, ids: List[int]):
+        users_with_accepted_regulations = self.member_ids_accepted_regulations
+        users_to_proceed = set(ids) & users_with_accepted_regulations
+
+        names = self.config.nicknames_source.get_nicknames_for(users_to_proceed)
+        guild = self.get_guild(self.guild_id)
+
+        renames = "Zmiany nicków:\n"
+        for id, name in names.items():
+            member = guild.get_member(int(id))
+
+            if member.display_name != name:
+                self.logger.info(f"Renaming {member.display_name} ({member.name}) to {name})")
+                await member.edit(nick = name)
+                renames += f"{member.display_name} ({member.name}) -> {name})\n"
+
+        await self._write_to_dedicated_channel(renames)
 
 
     async def _build_user_details(self, guild: discord.Guild, id: int) -> str:
