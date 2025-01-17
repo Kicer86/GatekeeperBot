@@ -436,6 +436,9 @@ class RolesBot(discord.Client):
         if len(added_acceptance) > 0:
             await self._refresh_names(added_acceptance)
 
+        if len(removed_acceptance) > 0:
+            await self._reset_names(removed_acceptance)
+
     async def _check_autorefresh(self, payload):
         """
             Check if reaction happened on roles autorefresh message, and do refresh if it did
@@ -588,6 +591,20 @@ class RolesBot(discord.Client):
                 self.logger.info(f"Renaming {member.display_name} ({member.name}) to {name})")
                 await member.edit(nick = name)
                 renames += f"{member.display_name} ({member.name}) -> {name})\n"
+
+        await self._write_to_dedicated_channel(renames)
+
+
+    async def _reset_names(self, ids: List[int]):
+        guild = self.get_guild(self.guild_id)
+        renames = "Resetowanie nicków:\n"
+
+        for id in ids:
+            member = guild.get_member(id)
+
+            self.logger.info(f"Renaming {member.display_name} ({member.name}) to {member.name})")
+            await member.edit(nick = member.name)
+            renames += f"{member.display_name} ({member.name}) -> {member.name})\n"
 
         await self._write_to_dedicated_channel(renames)
 
