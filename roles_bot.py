@@ -433,6 +433,8 @@ class RolesBot(discord.Client):
             added_roles, removed_roles = await self._update_member_roles(member)
             await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
 
+        if len(added_acceptance) > 0:
+            await self._refresh_names(added_acceptance)
 
     async def _check_autorefresh(self, payload):
         """
