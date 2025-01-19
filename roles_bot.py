@@ -508,7 +508,11 @@ class RolesBot(discord.Client):
 
         if len(redundant_roles) > 0:
             redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant_roles]
-            await member.remove_roles(*redundant_ids)
+            try:
+                await member.remove_roles(*redundant_ids)
+            except discord.errors.Forbidden:
+                self.logger.warning("Some roles could not be taken")
+
             removed_roles = redundant_roles
 
         return (added_roles, removed_roles)
