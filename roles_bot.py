@@ -20,10 +20,10 @@ class UserStatusFlags(Enum):
 
 
 class RolesSource:
-    def get_user_roles(self, member_id: int, flags: Dict[UserStatusFlags, bool]) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
+    def get_user_roles(self, member: discord.Member, flags: Dict[UserStatusFlags, bool]) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
         pass
 
-    def get_users_roles(self, member_ids: Dict[int, Dict[UserStatusFlags, bool]]) -> Dict[int, Tuple[List[str], List[str]]]:    # get roles for members. Returns dict of surest with tupe og roles to be added and roles to be removed
+    def get_users_roles(self, members: Dict[discord.Member, Dict[UserStatusFlags, bool]]) -> Dict[int, Tuple[List[str], List[str]]]:    # get roles for members. Returns dict of surest with tupe og roles to be added and roles to be removed
         pass
 
     def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who reacted on a message in auto roles channel
@@ -477,7 +477,7 @@ class RolesBot(discord.Client):
             This function is meant to be used by one timne actions
         """
         flags = self._build_user_flags(member.id)
-        roles_to_add, roles_to_remove = self.config.roles_source.get_user_roles(member.id, flags)
+        roles_to_add, roles_to_remove = self.config.roles_source.get_user_roles(member, flags)
         self.logger.debug(f"Roles to add: {repr(roles_to_add)}, roles to remove: {repr(roles_to_remove)}")
 
         added, removed = await self._apply_member_roles(member, roles_to_add, roles_to_remove)
@@ -530,7 +530,7 @@ class RolesBot(discord.Client):
         removed_roles = {}
         guild = self.get_guild(self.guild_id)
 
-        users_query = {member.id: self._build_user_flags(member.id) for member in members}
+        users_query = {member: self._build_user_flags(member.id) for member in members}
         new_roles = self.config.roles_source.get_users_roles(users_query)
 
         for member_id, roles in new_roles.items():
