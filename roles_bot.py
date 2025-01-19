@@ -500,7 +500,10 @@ class RolesBot(discord.Client):
 
         if len(missing_roles) > 0:
             missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing_roles]
-            await member.add_roles(*missing_ids)
+            try:
+                await member.add_roles(*missing_ids)
+            except discord.errors.Forbidden:
+                self.logger.warning("Some roles could not be applied")
             added_roles = missing_roles
 
         # remove taken roles
