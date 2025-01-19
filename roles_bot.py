@@ -495,6 +495,8 @@ class RolesBot(discord.Client):
         added_roles = []
         removed_roles = []
 
+        issues = ""
+
         # add missing roles
         missing_roles = [add for add in roles_to_add if add not in member_role_names]
 
@@ -504,6 +506,7 @@ class RolesBot(discord.Client):
                 await member.add_roles(*missing_ids)
             except discord.errors.Forbidden:
                 self.logger.warning("Some roles could not be applied")
+                issues += f"**Brak uprawnień aby nadać (niektóre) role użytkownikowi {member.display_name} ({member.name})**\n"
             added_roles = missing_roles
 
         # remove taken roles
@@ -515,8 +518,12 @@ class RolesBot(discord.Client):
                 await member.remove_roles(*redundant_ids)
             except discord.errors.Forbidden:
                 self.logger.warning("Some roles could not be taken")
+                issues += f"**Brak uprawnień aby zabrać (niektóre) role użytkownikowi {member.display_name} ({member.name})**\n"
 
             removed_roles = redundant_roles
+
+        if issues:
+            await self._write_to_dedicated_channel(issues)
 
         return (added_roles, removed_roles)
 
