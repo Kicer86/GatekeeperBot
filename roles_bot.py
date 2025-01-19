@@ -603,8 +603,12 @@ class RolesBot(discord.Client):
             member = guild.get_member(id)
 
             self.logger.info(f"Renaming {member.display_name} ({member.name}) to {member.name})")
-            await member.edit(nick = member.name)
-            renames += f"{member.display_name} ({member.name}) -> {member.name})\n"
+            try:
+                await member.edit(nick = member.name)
+            except discord.errors.Forbidden:
+                renames += f"{member.display_name} ({member.name}) -> {member.name}) (**Nieskuteczne, brak uprawnień**)\n"
+            else:
+                renames += f"{member.display_name} ({member.name}) -> {member.name})\n"
 
         await self._write_to_dedicated_channel(renames)
 
