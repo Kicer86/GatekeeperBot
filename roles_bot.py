@@ -587,7 +587,8 @@ class RolesBot(discord.Client):
 
         final_message = "\n".join(message_parts)
         final_message_escaped = escape_markdown(final_message)
-        await self._write_to_dedicated_channel(final_message_escaped)
+        if not self.storage.config["silent"]:
+            await self._write_to_dedicated_channel(final_message_escaped)
 
 
     async def _refresh_names(self, ids: List[int]):
@@ -613,7 +614,8 @@ class RolesBot(discord.Client):
 
         renames += nickname_changes
 
-        await self._write_to_dedicated_channel(renames)
+        if not self.storage.config["silent"]:
+            await self._write_to_dedicated_channel(renames)
 
 
     async def _reset_names(self, ids: List[int]):
@@ -631,7 +633,8 @@ class RolesBot(discord.Client):
             else:
                 renames += f"{member.display_name} ({member.name}) -> {member.name})\n"
 
-        await self._write_to_dedicated_channel(renames)
+        if not self.storage.config["silent"]:
+            await self._write_to_dedicated_channel(renames)
 
 
     async def _build_user_details(self, guild: discord.Guild, id: int) -> str:
@@ -668,7 +671,6 @@ class RolesBot(discord.Client):
         """
             Print bot status
         """
-
         guild = self.get_guild(self.guild_id)
 
         state = "Obecny stan:\n"
@@ -710,7 +712,10 @@ class RolesBot(discord.Client):
 
         self.unknown_users = self._collect_unknown_users()
         self.member_ids_accepted_regulations = await self._collect_users_who_accepted_all_regulations()
-        await self._print_status()
+
+        # Don't print status in silent mode
+        if not self.storage.config["silent"]:
+            await self._print_status()
 
 
     def _collect_unknown_users(self) -> set[int]:
