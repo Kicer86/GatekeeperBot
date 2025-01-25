@@ -598,13 +598,20 @@ class RolesBot(discord.Client):
         guild = self.get_guild(self.guild_id)
 
         renames = "Zmiany nicków:\n"
+
+        nickname_changes = ""
         for id, name in names.items():
             member = guild.get_member(int(id))
 
             if member.display_name != name:
                 self.logger.info(f"Renaming {member.display_name} ({member.name}) to {name})")
                 await member.edit(nick = name)
-                renames += f"{member.display_name} ({member.name}) -> {name})\n"
+                nickname_changes += f"{member.display_name} ({member.name}) -> {name})\n"
+
+        if len(nickname_changes) == 0:
+            nickname_changes = "brak"
+
+        renames += nickname_changes
 
         await self._write_to_dedicated_channel(renames)
 
