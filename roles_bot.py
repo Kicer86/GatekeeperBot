@@ -241,6 +241,7 @@ class RolesBot(discord.Client):
                                                                "test newuser @user     - testuje procedurę dołączenia nowego użytkownika na użytkowniku @user\n"
                                                                "dump_db                - zrzuca treść bazy danych\n"
                                                                "set autorefresh czas   - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
+                                                               "set verbose poziom     - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
                                                                "```"
                                                               )
 
