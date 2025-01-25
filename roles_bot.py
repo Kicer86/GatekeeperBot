@@ -315,9 +315,15 @@ class RolesBot(discord.Client):
         return message_fragments
 
 
-    async def _write_to_dedicated_channel(self, message: str, level: int = logging.INFO):
+    def _is_level_sufficent_for_send(self, level: int) -> bool:
         allowed_level = self.storage.get_config()[RolesBot.VerbosityEntry]
         send = level >= allowed_level
+
+        return send
+
+
+    async def _write_to_dedicated_channel(self, message: str, level: int = logging.INFO):
+        send = self._is_level_sufficent_for_send(level)
 
         if send:
             self.logger.debug(f"Sending {level} level message {repr(message)}")
@@ -331,7 +337,6 @@ class RolesBot(discord.Client):
                 await self.channel.send(prefix + part)
         else:
             self.logger.debug(f"Not Sending {level} level message {repr(message)}")
-            self.logger.debug(f"Required level: {allowed_level}")
 
 
     @tasks.loop(seconds = 60)
@@ -597,8 +602,7 @@ class RolesBot(discord.Client):
 
         final_message = "\n".join(message_parts)
         final_message_escaped = escape_markdown(final_message)
-        if not self.storage.config["silent"]:
-            await self._write_to_dedicated_channel(final_message_escaped)
+        await self._write_to_dedicated_channel(final_message_escaped, logging.DEBUG)
 
 
     async def _refresh_names(self, ids: List[int]):
@@ -624,8 +628,7 @@ class RolesBot(discord.Client):
 
         renames += nickname_changes
 
-        if not self.storage.config["silent"]:
-            await self._write_to_dedicated_channel(renames)
+        await self._write_to_dedicated_channel(renames, logging.DEBUG)
 
 
     async def _reset_names(self, ids: List[int]):
@@ -643,8 +646,7 @@ class RolesBot(discord.Client):
             else:
                 renames += f"{member.display_name} ({member.name}) -> {member.name})\n"
 
-        if not self.storage.config["silent"]:
-            await self._write_to_dedicated_channel(renames)
+        await self._write_to_dedicated_channel(renames, logging.DEBUG)
 
 
     async def _build_user_details(self, guild: discord.Guild, id: int) -> str:
@@ -723,8 +725,7 @@ class RolesBot(discord.Client):
         self.unknown_users = self._collect_unknown_users()
         self.member_ids_accepted_regulations = await self._collect_users_who_accepted_all_regulations()
 
-        # Don't print status in silent mode
-        if not self.storage.config["silent"]:
+        if self._is_level_sufficent_for_send(logging.DEBUG):
             await self._print_status()
 
 
