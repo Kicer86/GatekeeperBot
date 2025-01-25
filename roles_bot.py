@@ -221,6 +221,17 @@ class RolesBot(discord.Client):
                                 await self._write_to_dedicated_channel(f"Częstotliwość odświeżania zmieniona na {autorefresh} minut")
                             else:
                                 await self._write_to_dedicated_channel(f"Daj minimum 5 minut")
+                    elif subcommand == "verbose" and len(subargs) == 1:
+                        async with self.channel.typing():
+                            verbosity = int(subargs[0])
+
+                            config = self.storage.get_config()
+                            current_value = config[RolesBot.VerbosityEntry]
+                            config[RolesBot.VerbosityEntry] = verbosity
+                            self.storage.set_config(config)
+                            self.logger.info(f"Changing verbosity {current_value} -> {verbosity}")
+                            await self._write_to_dedicated_channel(f"Poziom gadatliwości bota zmieniony na: {verbosity}")
+
                 elif command == "help":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Dostepne polecenia:\n"
@@ -327,7 +338,6 @@ class RolesBot(discord.Client):
 
         if send:
             self.logger.debug(f"Sending {level} level message {repr(message)}")
-
 
             message_splitted = self._split_message(message)
 
