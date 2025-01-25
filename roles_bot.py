@@ -67,6 +67,7 @@ def get_current_commit_hash():
 
 class RolesBot(discord.Client):
     AutoRefreshEntry = "autorefresh"
+    VerbosityEntry = "verbosity"
 
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
@@ -86,6 +87,7 @@ class RolesBot(discord.Client):
 
         # setup default values in config
         self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
+        self.storage.set_default(RolesBot.VerbosityEntry, logging.INFO)
 
 
     async def on_ready(self):
@@ -313,15 +315,23 @@ class RolesBot(discord.Client):
         return message_fragments
 
 
-    async def _write_to_dedicated_channel(self, message: str):
-        self.logger.debug(f"Sending message {repr(message)}")
+    async def _write_to_dedicated_channel(self, message: str, level: int = logging.INFO):
+        allowed_level = self.storage.get_config()[RolesBot.VerbosityEntry]
+        send = level >= allowed_level
 
-        message_splitted = self._split_message(message)
+        if send:
+            self.logger.debug(f"Sending {level} level message {repr(message)}")
 
-        prefix = "" if self.message_prefix == "" else self.message_prefix + " "
 
-        for part in message_splitted:
-            await self.channel.send(prefix + part)
+            message_splitted = self._split_message(message)
+
+            prefix = "" if self.message_prefix == "" else self.message_prefix + " "
+
+            for part in message_splitted:
+                await self.channel.send(prefix + part)
+        else:
+            self.logger.debug(f"Not Sending {level} level message {repr(message)}")
+            self.logger.debug(f"Required level: {allowed_level}")
 
 
     @tasks.loop(seconds = 60)
