@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from discord.utils import escape_markdown
 from discord.ext import tasks
 from enum import Enum
-from typing import Dict, List, Tuple, Set
+from typing import Any, Dict, List, Tuple, Set
 
 from roles_bot.configuration import Configuration
 
@@ -35,7 +35,7 @@ class RolesSource:
     def role_for_known_users(self) -> str:
         pass
 
-    def list_known_users(self) -> Dict[str, any]:
+    def list_known_users(self) -> Dict[str, Any]:
         pass
 
 
@@ -342,9 +342,9 @@ class RolesBot(discord.Client):
         await self._check_reaction_on_regulations(payload, False)
 
 
-    def _split_message(self, message: str) -> [str]:
+    def _split_message(self, message: str) -> List[str]:
         fragment_length: int = 2000 - len(self.message_prefix) - 1
-        message_fragments: [str] = []
+        message_fragments: List[str] = []
         split_priorities = ['\n', '.', ',', ' ']
 
         begin: int = 0
