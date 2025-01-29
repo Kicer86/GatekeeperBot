@@ -144,7 +144,7 @@ class RolesBot(discord.Client):
             bot_mention = f"<@{self.user.id}>"
 
             if message_content.startswith(bot_mention):
-                if not any(role.name in ["Administrator", "Moderator", "Zarząd", "Koordynator"] for role in author.roles):
+                if not any(role.name in ["Administrator", "Technik"] for role in author.roles):
                     self.logger.warning(f"User {author.name} has no rights to use bot.")
                     return
 
