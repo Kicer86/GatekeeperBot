@@ -68,6 +68,7 @@ def get_current_commit_hash():
 class RolesBot(discord.Client):
     AutoRefreshEntry = "autorefresh"
     VerbosityEntry = "verbosity"
+    IDEntry = "bot_id"
 
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
@@ -88,6 +89,10 @@ class RolesBot(discord.Client):
         # setup default values in config
         self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
         self.storage.set_default(RolesBot.VerbosityEntry, logging.INFO)
+        self.storage.set_default(RolesBot.IDEntry, 1)
+
+        # read bot's ID from config
+        self.bot_id = self.storage.get_config().get(RolesBot.IDEntry)
 
 
     async def on_ready(self):
@@ -151,6 +156,27 @@ class RolesBot(discord.Client):
                 guild = message_guild
                 whole_command = message_content[len(bot_mention):].strip()
                 command_splitted = whole_command.split(" ")
+
+                # check for ID filter
+                if len(command_splitted) == 0:
+                    self.logger.debug(f"No command. Ignoring")
+                    return
+
+                first_arg: str = command_splitted[0]
+                if first_arg.isdigit():
+                    id = int(first_arg)
+                    if id != self.bot_id:
+                        self.logger.debug(f"Message for bot with id: {id}. My id: {self.bot_id}. Ignoring")
+                        return
+
+                    # id matched, skip it now
+                    command_splitted = command_splitted[1:]
+
+                # check command
+                if len(command_splitted) == 0:
+                    self.logger.debug(f"No command. Ignoring")
+                    return
+
                 command = command_splitted[0]
                 args = command_splitted[1:]
 
