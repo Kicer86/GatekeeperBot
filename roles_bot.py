@@ -121,7 +121,7 @@ class RolesBot(discord.Client):
             self.logger.debug(f"Auto roles: listening for reactions in channel {channel}")
 
         async with self.channel.typing():
-            await self._write_to_dedicated_channel(f"Start bota. git commit: {hash}\n")
+            await self._write_to_dedicated_channel(f"Start bota. git commit: {hash} ID: **{self.bot_id}**\n")
             await self._update_state()
 
         self._auto_refresh.start()
