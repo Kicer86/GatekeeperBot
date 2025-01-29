@@ -268,6 +268,8 @@ class RolesBot(discord.Client):
                                                                "dump_db                - zrzuca treść bazy danych\n"
                                                                "set autorefresh czas   - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
                                                                "set verbosity poziom   - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
+                                                               "\n"
+                                                               "Polecenie może być poprzedzone ID bota (zdefiniowanym w pliku konfiguracyjnym), aby wysyłać komendy do konkretnej instancji bota.\n"
                                                                "```"
                                                               )
 
