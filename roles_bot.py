@@ -542,7 +542,7 @@ class RolesBot(discord.Client):
         return added, removed
 
 
-    async def _apply_member_roles(self, member: discord.Member, roles_to_add, roles_to_remove) -> Tuple[List, List]:
+    async def _apply_member_roles(self, member: discord.Member, roles_to_add: List[str], roles_to_remove: List[str]) -> Tuple[List[str], List[str]]:
         """
             Apply given roles to the user
         """
