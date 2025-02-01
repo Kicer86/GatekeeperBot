@@ -69,6 +69,7 @@ class RolesBot(discord.Client):
     AutoRefreshEntry = "autorefresh"
     VerbosityEntry = "verbosity"
     IDEntry = "bot_id"
+    DryRunEntry = "dry_run"
 
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
@@ -90,9 +91,11 @@ class RolesBot(discord.Client):
         self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
         self.storage.set_default(RolesBot.VerbosityEntry, logging.INFO)
         self.storage.set_default(RolesBot.IDEntry, 1)
+        self.storage.set_default(RolesBot.DryRunEntry, False)
 
-        # read bot's ID from config
+        # read bot's config from file
         self.bot_id = self.storage.get_config().get(RolesBot.IDEntry)
+        self.dry_run = self.storage.get_config().get(RolesBot.DryRunEntry)
 
 
     async def on_ready(self):
@@ -557,7 +560,10 @@ class RolesBot(discord.Client):
         if len(missing_roles) > 0:
             missing_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in missing_roles]
             try:
-                await member.add_roles(*missing_ids)
+                if self.dry_run:
+                    self.logger.debug("Dry run mode, not applying roles")
+                else:
+                    await member.add_roles(*missing_ids)
             except discord.errors.Forbidden:
                 self.logger.warning("Some roles could not be applied")
                 issues += f"**Brak uprawnień aby nadać (niektóre) role użytkownikowi {member.display_name} ({member.name})**\n"
@@ -569,7 +575,10 @@ class RolesBot(discord.Client):
         if len(redundant_roles) > 0:
             redundant_ids = [discord.utils.get(member.guild.roles, name=role_name) for role_name in redundant_roles]
             try:
-                await member.remove_roles(*redundant_ids)
+                if self.dry_run:
+                    self.logger.debug("Dry run mode, not applying roles")
+                else:
+                    await member.remove_roles(*redundant_ids)
             except discord.errors.Forbidden:
                 self.logger.warning("Some roles could not be taken")
                 issues += f"**Brak uprawnień aby zabrać (niektóre) role użytkownikowi {member.display_name} ({member.name})**\n"
@@ -659,7 +668,10 @@ class RolesBot(discord.Client):
 
             if member.display_name != name:
                 self.logger.info(f"Renaming {member.display_name} ({member.name}) to {name}")
-                await member.edit(nick = name)
+                if self.dry_run:
+                    self.logger.debug("Dry run mode, not changing name")
+                else:
+                    await member.edit(nick = name)
                 nickname_changes += f"{member.display_name} ({member.name}) -> {name}\n"
 
         if len(nickname_changes) == 0:
