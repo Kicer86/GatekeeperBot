@@ -311,9 +311,12 @@ class RolesBot(discord.Client):
                 await self._write_to_dedicated_channel(f"Nowy użytkownik {member.name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
             else:
                 await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie instrukcji powiązania konta.")
-                await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
-                                  'Twój ID (który będzie trzeba przekopiować) to:\n')
-                await member.send(f'{member_id}')
+                try:
+                    await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
+                                      'Twój ID (który będzie trzeba przekopiować) to:\n')
+                    await member.send(f'{member_id}')
+                except discord.errors.Forbidden:
+                    await self._write_to_dedicated_channel(f"**Wysyłanie wiadomości do {member.name} nieudane.**")
 
                 unknown_notified_users.append(member_id)
 
