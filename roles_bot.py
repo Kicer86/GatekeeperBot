@@ -260,6 +260,15 @@ class RolesBot(discord.Client):
                             self.storage.set_config(config)
                             self.logger.info(f"Changing verbosity {current_value} -> {verbosity}")
                             await self._write_to_dedicated_channel(f"Poziom gadatliwości bota zmieniony na: {verbosity}")
+                elif command == "set_role" and len(args) >= 3:
+                    user_id = int(args[0])
+                    state = True if args[1] == "1" else False
+                    role_name = " ".join(args[2:])
+                    member = message_guild.get_member(user_id)
+                    if state:
+                        await self._apply_member_roles(member, [role_name], [])
+                    else:
+                        await self._apply_member_roles(member, [], [role_name])
 
                 elif command == "help":
                     async with self.channel.typing():
