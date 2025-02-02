@@ -11,6 +11,7 @@ from discord.ext import tasks
 from enum import Enum
 from typing import Any, Dict, List, Tuple, Set
 
+from . import utils
 from roles_bot.configuration import Configuration
 
 
@@ -762,24 +763,19 @@ class RolesBot(discord.Client):
 
 
     async def _build_user_details(self, guild: discord.Guild, id: int) -> str:
+        status = await utils.get_user_status(self, guild, id)
+        name = await utils.build_user_name_for_discord_message(self, guild, id)
+
         result: str = ""
-        exists = True
-        is_on_server = True
-        member = guild.get_member(id)
 
-        if member is None:
-            try:
-                member = await self.fetch_user(id)
-                is_on_server = False
-            except discord.NotFound:
-                exists = False
-
-        status = ":green_circle:" if is_on_server else ":red_circle:"
-
-        if member is None:
-            result = f":black_circle:{id}"
+        if status is None:
+            result = ":black_circle:"
+        elif status:
+            result = ":green_circle:"
         else:
-            result = f"{status} {member.display_name} ({member.name})"
+            result = ":red_circle:"
+
+        result += " " + name
 
         return result
 
