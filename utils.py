@@ -8,7 +8,7 @@ from typing import Union
 async def build_user_name_for_discord_message(client: discord.Client, guild: discord.Guild, id: int) -> str:
     """
         Function return string with user name in a uniformed way.
-        All special charaters are being escaped
+        All special characters are being escaped
     """
     member = guild.get_member(id)
 
@@ -19,6 +19,24 @@ async def build_user_name_for_discord_message(client: discord.Client, guild: dis
             pass
 
     result = escape_markdown(f"{id}" if member is None else f"{member.display_name} ({member.name})")
+
+    return result
+
+
+async def build_user_name_for_log(client: discord.Client, guild: discord.Guild, id: int) -> str:
+    """
+        Function return string with user name in a uniformed way.
+        All special characters are being escaped
+    """
+    member = guild.get_member(id)
+
+    if member is None:
+        try:
+            member = await client.fetch_user(id)
+        except discord.NotFound:
+            pass
+
+    result = f"{id}" if member is None else repr(f"({id} {member.name} {member.display_name})")
 
     return result
 
