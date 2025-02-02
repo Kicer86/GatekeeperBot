@@ -798,7 +798,7 @@ class RolesBot(discord.Client):
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
         state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
 
-        state += "Użytkownicy którzy zaakceptowali wszystkie częsci regulaminu:\n"
+        state += "Użytkownicy którzy zaakceptowali wszystkie części regulaminu:\n"
         allowed_members = list(map(lambda id: self._build_user_details(guild, id), self.member_ids_accepted_regulations))
         state += ", ".join(await asyncio.gather(*allowed_members))
 
