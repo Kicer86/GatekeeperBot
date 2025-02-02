@@ -55,6 +55,7 @@ class BotConfig:
     auto_roles_channels: List[int]                          # channel ids
     server_regulations_message_ids: List[Tuple[int, int]]   # list of (channel id, message id)
     user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
+    ids_channel_id: int                                     # channel to put user ids
     guild_id: int                                           # allowed guild ID
 
 
@@ -295,9 +296,9 @@ class RolesBot(discord.Client):
         user_roles_names = [role.name for role in user_roles]
         known_users_role = self.config.roles_source.role_for_known_users()
 
-        known = True if known_users_role in user_roles_names else False
+        user_is_known = known_users_role in user_roles_names
 
-        if known:
+        if user_is_known:
             self.logger.info("User is known")
         else:
             self.logger.info("User is not known")
@@ -310,20 +311,12 @@ class RolesBot(discord.Client):
             if member_id in unknown_notified_users:
                 await self._write_to_dedicated_channel(f"Nowy użytkownik {member.name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
             else:
-                await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. ~~Wysyłanie instrukcji powiązania konta.~~")
+                await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie ID na dedykowany kanał.")
 
-                # try:
-                #     await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
-                #                       'Twój ID (który będzie trzeba przekopiować) to:\n')
-                #     await member.send(f'{member_id}')
-                #
-                #     unknown_notified_users.append(member_id)
-                #
-                #     config["unknown_notified_users"] = unknown_notified_users
-                #     self.storage.set_config(config)
-                #
-                # except discord.errors.Forbidden:
-                #     await self._write_to_dedicated_channel(f"**Wysyłanie wiadomości do {member.name} nieudane.**")
+                guild = self.get_guild(self.guild_id)
+                channel = guild.get_channel(self.config.ids_channel_id)
+                await channel.send(f"{member.mention} Twoje ID to:")
+                await channel.send(f"{member.id}")
 
 
     async def on_raw_reaction_add(self, payload):
