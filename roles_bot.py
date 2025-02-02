@@ -315,13 +315,14 @@ class RolesBot(discord.Client):
                     await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
                                       'Twój ID (który będzie trzeba przekopiować) to:\n')
                     await member.send(f'{member_id}')
+
+                    unknown_notified_users.append(member_id)
+
+                    config["unknown_notified_users"] = unknown_notified_users
+                    self.storage.set_config(config)
+
                 except discord.errors.Forbidden:
                     await self._write_to_dedicated_channel(f"**Wysyłanie wiadomości do {member.name} nieudane.**")
-
-                unknown_notified_users.append(member_id)
-
-                config["unknown_notified_users"] = unknown_notified_users
-                self.storage.set_config(config)
 
 
     async def on_raw_reaction_add(self, payload):
