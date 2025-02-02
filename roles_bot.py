@@ -71,6 +71,7 @@ class RolesBot(discord.Client):
     VerbosityEntry = "verbosity"
     IDEntry = "bot_id"
     DryRunEntry = "dry_run"
+    UnknownNotifiedUsers = "unknown_notified_users"
 
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
@@ -305,18 +306,29 @@ class RolesBot(discord.Client):
             self.unknown_users.add(member.id)
             config = self.storage.get_config()
 
-            unknown_notified_users = config.get("unknown_notified_users", [])
-            member_id = member.id
+            unknown_notified_users = config.get(RolesBot.UnknownNotifiedUsers, {})
+            if isinstance(unknown_notified_users, list):
+                unknown_notified_users = dict.fromkeys(unknown_notified_users, None)
 
-            if member_id in unknown_notified_users:
+            member_id = member.id
+            member_id_str = str(member_id)
+
+            if member_id_str in unknown_notified_users:
                 await self._write_to_dedicated_channel(f"Nowy użytkownik {member.name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
             else:
                 await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie ID na dedykowany kanał.")
 
                 guild = self.get_guild(self.guild_id)
                 channel = guild.get_channel(self.config.ids_channel_id)
-                await channel.send(f"{member.name} Twoje ID to:")
-                await channel.send(f"{member.id}")
+                msg1: discord.Message = await channel.send(f"{member.name} Twoje ID to:")
+                msg2: discord.Message = await channel.send(f"{member.id}")
+
+                unknown_notified_users[member_id_str] = {"channel": channel.id, "messages": [msg1.id, msg2.id]}
+                config[RolesBot.UnknownNotifiedUsers] = unknown_notified_users
+
+            self.storage.set_config(config)
+
+            await self._user_becomes_known(member_id)
 
 
     async def on_raw_reaction_add(self, payload):
@@ -503,6 +515,7 @@ class RolesBot(discord.Client):
         if len(removed_acceptance) > 0:
             await self._reset_names(removed_acceptance)
 
+
     async def _check_autorefresh(self, payload):
         """
             Check if reaction happened on roles autorefresh message, and do refresh if it did
@@ -595,7 +608,38 @@ class RolesBot(discord.Client):
         if issues:
             await self._write_to_dedicated_channel(issues)
 
+        # user is known now
+        if self.config.roles_source.role_for_known_users() in added_roles:
+            await self._user_becomes_known(member.id)
+
         return (added_roles, removed_roles)
+
+
+    async def _user_becomes_known(self, member_id: int):
+        config = self.storage.get_config()
+        notified_users = config.get(RolesBot.UnknownNotifiedUsers, {})
+
+        member_id_str = str(member_id)
+
+        if member_id_str in notified_users:
+            messages_info = notified_users[member_id_str]
+
+            if messages_info is not None:
+                guild = self.get_guild(self.guild_id)
+                channel_id = messages_info["channel"]
+                messages_ids = messages_info["messages"]
+
+                channel: discord.TextChannel = guild.get_channel(channel_id)
+                try:
+                    messages = [await channel.fetch_message(messages_id) for messages_id in messages_ids]
+                    await channel.delete_messages(messages)
+                except:
+                    pass
+
+            del notified_users[member_id_str]
+            config[RolesBot.UnknownNotifiedUsers] = notified_users
+
+            self.storage.set_config(config)
 
 
     def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:
