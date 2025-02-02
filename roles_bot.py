@@ -310,19 +310,20 @@ class RolesBot(discord.Client):
             if member_id in unknown_notified_users:
                 await self._write_to_dedicated_channel(f"Nowy użytkownik {member.name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
             else:
-                await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie instrukcji powiązania konta.")
-                try:
-                    await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
-                                      'Twój ID (który będzie trzeba przekopiować) to:\n')
-                    await member.send(f'{member_id}')
+                await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. ~~Wysyłanie instrukcji powiązania konta.~~")
 
-                    unknown_notified_users.append(member_id)
-
-                    config["unknown_notified_users"] = unknown_notified_users
-                    self.storage.set_config(config)
-
-                except discord.errors.Forbidden:
-                    await self._write_to_dedicated_channel(f"**Wysyłanie wiadomości do {member.name} nieudane.**")
+                # try:
+                #     await member.send('Aby uzyskać dostęp do zasobów serwera należy postępować zgodnie z instrukcją zamieszczoną na serwerze, na kanale nazwanym #witaj.\n'
+                #                       'Twój ID (który będzie trzeba przekopiować) to:\n')
+                #     await member.send(f'{member_id}')
+                #
+                #     unknown_notified_users.append(member_id)
+                #
+                #     config["unknown_notified_users"] = unknown_notified_users
+                #     self.storage.set_config(config)
+                #
+                # except discord.errors.Forbidden:
+                #     await self._write_to_dedicated_channel(f"**Wysyłanie wiadomości do {member.name} nieudane.**")
 
 
     async def on_raw_reaction_add(self, payload):
