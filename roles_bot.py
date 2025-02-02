@@ -315,7 +315,7 @@ class RolesBot(discord.Client):
 
                 guild = self.get_guild(self.guild_id)
                 channel = guild.get_channel(self.config.ids_channel_id)
-                await channel.send(f"{member.mention} Twoje ID to:")
+                await channel.send(f"{member.name} Twoje ID to:")
                 await channel.send(f"{member.id}")
 
 
