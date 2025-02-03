@@ -287,6 +287,7 @@ class RolesBot(discord.Client):
                                                                "```"
                                                               )
 
+
     async def on_member_join(self, member: discord.Member):
         self.logger.info(f"New user {repr(member.name)} joining the server.")
 
@@ -327,8 +328,6 @@ class RolesBot(discord.Client):
                 config[RolesBot.UnknownNotifiedUsers] = unknown_notified_users
 
             self.storage.set_config(config)
-
-            await self._user_becomes_known(member_id)
 
 
     async def on_raw_reaction_add(self, payload):
