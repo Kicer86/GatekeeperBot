@@ -320,7 +320,7 @@ class RolesBot(discord.Client):
 
                 guild = self.get_guild(self.guild_id)
                 channel = guild.get_channel(self.config.ids_channel_id)
-                msg1: discord.Message = await channel.send(f"{member.name} Twoje ID to:")
+                msg1: discord.Message = await channel.send(f"{member.mention} Twoje ID to:")
                 msg2: discord.Message = await channel.send(f"{member.id}")
 
                 unknown_notified_users[member_id_str] = {"channel": channel.id, "messages": [msg1.id, msg2.id]}
