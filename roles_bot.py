@@ -614,7 +614,7 @@ class RolesBot(discord.Client):
 
         if self.config.roles_source.role_for_known_users() in removed_roles:
             # user is unknown now
-            await self._user_becomes_unknown()
+            await self._user_becomes_unknown(member.id)
 
         return (added_roles, removed_roles)
 
