@@ -708,6 +708,9 @@ class RolesBot(discord.Client):
         users_with_accepted_regulations = self.member_ids_accepted_regulations
         users_to_proceed = set(ids) & users_with_accepted_regulations
 
+        if len(users_to_proceed) == 0:
+            return
+
         names = self.config.nicknames_source.get_nicknames_for(users_to_proceed)
         guild = self.get_guild(self.guild_id)
 
