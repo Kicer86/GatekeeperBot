@@ -608,9 +608,13 @@ class RolesBot(discord.Client):
         if issues:
             await self._write_to_dedicated_channel(issues)
 
-        # user is known now
         if self.config.roles_source.role_for_known_users() in added_roles:
+            # user is known now
             await self._user_becomes_known(member.id)
+
+        if self.config.roles_source.role_for_known_users() in removed_roles:
+            # user is unknown now
+            await self._user_becomes_unknown()
 
         return (added_roles, removed_roles)
 
@@ -640,6 +644,10 @@ class RolesBot(discord.Client):
             config[RolesBot.UnknownNotifiedUsers] = notified_users
 
             self.storage.set_config(config)
+
+
+    async def _user_becomes_unknown(self, member_id: int):
+        await self._reset_names([member_id])
 
 
     def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:
