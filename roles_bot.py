@@ -451,19 +451,23 @@ class RolesBot(discord.Client):
         channel_id = payload.channel_id
 
         if channel_id in self.config.auto_roles_channels:
-            member = guild.get_member(payload.user_id)
-            self.logger.info(f"Updating auto roles for user {member}")
+            member_id = payload.user_id
             message_id = payload.message_id
+
+            member = guild.get_member(payload.user_id)
+            name_for_discord, name_for_log = utils.build_user_name(self, guild, member_id)
+
+            self.logger.info(f"Updating auto roles for user {name_for_log}")
             channel = await self.fetch_channel(channel_id)
             message = await channel.fetch_message(message_id)
             self.logger.debug(f"Caused by reaction on message {message.content} in channel {channel}")
             roles_to_add, roles_to_remove = roles_source(member, message)
 
             if len(roles_to_add) == 0 and len(roles_to_remove) == 0:
-                self.logger.warning(f"No roles to be added nor removed were returned after member {member} reaction in auto roles channel for {message.content}.")
+                self.logger.warning(f"No roles to be added nor removed were returned after member {name_for_log} reaction in auto roles channel for {message.content}.")
 
             added_roles, removed_roles = await self._apply_member_roles(member, roles_to_add, roles_to_remove)
-            await self._single_user_report(f"Użytkownik {member} dokonał zmian roli:", added_roles, removed_roles)
+            await self._single_user_report(f"Użytkownik {name_for_discord} dokonał zmian roli:", added_roles, removed_roles)
 
 
     async def _check_reaction_on_regulations(self, payload, added: bool):
