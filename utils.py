@@ -41,6 +41,27 @@ async def build_user_name_for_log(client: discord.Client, guild: discord.Guild, 
     return result
 
 
+async def build_user_name(client: discord.Client, guild: discord.Guild, id: int) -> (str, str):
+    """
+        Function return string with user name in a uniformed way.
+        All special characters are being escaped.
+
+        Two strings are returned: first is for discord message, second for logging
+    """
+    member = guild.get_member(id)
+
+    if member is None:
+        try:
+            member = await client.fetch_user(id)
+        except discord.NotFound:
+            pass
+
+    for_discord = escape_markdown(f"{id}" if member is None else f"{member.display_name} ({member.name})")
+    for_logs = repr(f"{id}" if member is None else f"({id} {member.name} {member.display_name})")
+
+    return (for_discord, for_logs)
+
+
 async def get_user_status(client: discord.Client, guild: discord.Guild, id: int) -> Union[bool, None]:
     """
         function return True if user exists and is available on the guild
