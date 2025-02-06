@@ -77,3 +77,17 @@ async def get_user_status(client: discord.Client, guild: discord.Guild, id: int)
             return None
     else:
         return True
+
+
+async def remove_user_reactions(guild: discord.Guild, message: discord.Message, member_id: int) -> bool:
+    try:
+        for reaction in message.reactions:
+            async for user in reaction.users():
+                if user.id == member_id:
+                    await reaction.remove(user)
+    except discord.Forbidden:
+        return False
+    except discord.HTTPException as e:
+        return False
+
+    return True
