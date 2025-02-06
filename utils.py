@@ -91,3 +91,10 @@ async def remove_user_reactions(guild: discord.Guild, message: discord.Message, 
         return False
 
     return True
+
+
+def generate_link(guild_id: int, items):
+    leaf = "/".join(map(str, items)) if isinstance(items, tuple) else items
+    url = f"https://discord.com/channels/{guild_id}/{leaf}"
+
+    return url

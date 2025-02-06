@@ -784,13 +784,6 @@ class RolesBot(discord.Client):
         return result
 
 
-    def _generate_link(self, items):
-        leaf = "/".join(map(str, items)) if isinstance(items, tuple) else items
-        url = f"https://discord.com/channels/{self.guild_id}/{leaf}"
-
-        return url
-
-
     async def _print_status(self):
         """
             Print bot status
@@ -812,14 +805,14 @@ class RolesBot(discord.Client):
         state += f"Czas do automatycznego odświeżenia ról: {time_left}\n"
         state += f"Częstotliwość odświeżenia: {autorefresh} minut\n"
 
-        autoroles_urls = [self._generate_link(id) for id in self.config.auto_roles_channels]
+        autoroles_urls = [utils.generate_link(self.guild_id, id) for id in self.config.auto_roles_channels]
         autoroles_string = " ".join(autoroles_urls)
         state += f"Obserwowane kanały z autorolami: {autoroles_string}\n"
 
-        autorefresh_string = self._generate_link(self.config.user_auto_refresh_roles_message_id)
+        autorefresh_string = utils.generate_link(self.guild_id, self.config.user_auto_refresh_roles_message_id)
         state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
 
-        regulations_urls = [self._generate_link(id) for id in self.config.server_regulations_message_ids]
+        regulations_urls = [utils.generate_link(self.guild_id, id) for id in self.config.server_regulations_message_ids]
         regulations_string = " ".join(regulations_urls)
         state += f"Wiadomości regulaminu do zaakceptowania: {regulations_string}\n"
 
