@@ -337,6 +337,14 @@ class RolesBot(discord.Client):
 
             self.storage.set_config(config)
 
+    async def on_member_remove(self, member: discord.Member):
+        guild = self.get_guild(self.guild_id)
+        discord_name, log_name = utils.build_user_name(self, guild, member.id)
+
+        self.logger.info("User {log_name} left guild")
+        await self._write_to_dedicated_channel("Użytkownik {discord_name} opuścił serwer", logging.INFO)
+        await self._user_becomes_unknown(member.id)
+
 
     async def on_raw_reaction_add(self, payload):
         await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
