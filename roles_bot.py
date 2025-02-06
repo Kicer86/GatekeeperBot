@@ -341,8 +341,8 @@ class RolesBot(discord.Client):
         guild = self.get_guild(self.guild_id)
         discord_name, log_name = utils.build_user_name(self, guild, member.id)
 
-        self.logger.info("User {log_name} left guild")
-        await self._write_to_dedicated_channel("Użytkownik {discord_name} opuścił serwer", logging.INFO)
+        self.logger.info(f"User {log_name} left guild")
+        await self._write_to_dedicated_channel(f"Użytkownik {discord_name} opuścił serwer", logging.INFO)
         await self._user_becomes_unknown(member.id)
 
 
@@ -674,8 +674,8 @@ class RolesBot(discord.Client):
         guild = self.get_guild(self.guild_id)
         discord_name, log_name = utils.build_user_name(self, guild, member_id)
 
-        self.logger.info("Removing acceptance of regulations for user {log_name}")
-        await self._write_to_dedicated_channel("Usuwanie akceptacji regulaminu użytkownika {discord_name}", logging.INFO)
+        self.logger.info(f"Removing acceptance of regulations for user {log_name}")
+        await self._write_to_dedicated_channel(f"Usuwanie akceptacji regulaminu użytkownika {discord_name}", logging.INFO)
 
         for channel_id, message_id in self.config.server_regulations_message_ids:
             message = await utils.get_message(channel_id, message_id)
