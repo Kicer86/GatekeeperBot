@@ -664,6 +664,10 @@ class RolesBot(discord.Client):
 
     async def _revoke_user_acceptances(self, member_id: int):
         guild = self.get_guild(self.guild_id)
+        discord_name, log_name = utils.build_user_name(self, guild, member_id)
+
+        self.logger.info("Removing acceptance of regulations for user {log_name}")
+        await self._write_to_dedicated_channel("Usuwanie akceptacji regulaminu użytkownika {discord_name}", logging.INFO)
 
         for channel_id, message_id in self.config.server_regulations_message_ids:
             message = await utils.get_message(channel_id, message_id)
