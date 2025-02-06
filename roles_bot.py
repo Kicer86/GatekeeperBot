@@ -222,8 +222,7 @@ class RolesBot(discord.Client):
                         channel_id = int(subargs[0])
                         message_id = int(subargs[1])
                         member_id = int(subargs[2])
-                        channel: discord.TextChannel = message_guild.get_channel(channel_id)
-                        message: discord.Message = await channel.fetch_message(message_id)
+                        message = await utils.get_message(channel_id, message_id)
                         status = await utils.remove_user_reactions(message_guild, message, member_id)
                 elif command == "dump_db":
                     users_membership = self.config.roles_source.list_known_users()
@@ -660,6 +659,16 @@ class RolesBot(discord.Client):
 
     async def _user_becomes_unknown(self, member_id: int):
         await self._reset_names([member_id])
+        await self._revoke_user_acceptances(member_id)
+
+
+    async def _revoke_user_acceptances(self, member_id: int):
+        guild = self.get_guild(self.guild_id)
+
+        for channel_id, message_id in self.config.server_regulations_message_ids:
+            message = await utils.get_message(channel_id, message_id)
+
+            await utils.remove_user_reactions(guild, message, member_id)
 
 
     def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:

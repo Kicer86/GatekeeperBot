@@ -98,3 +98,10 @@ def generate_link(guild_id: int, items):
     url = f"https://discord.com/channels/{guild_id}/{leaf}"
 
     return url
+
+
+async def get_message(guild: discord.Guild, channel_id: int, message_id: int) -> discord.Message:
+    channel: discord.TextChannel = guild.get_channel(channel_id)
+    message: discord.Message = await channel.fetch_message(message_id)
+
+    return message
