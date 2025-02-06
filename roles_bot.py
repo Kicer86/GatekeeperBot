@@ -218,6 +218,13 @@ class RolesBot(discord.Client):
 
                             self.logger.info(f"Testing on_member_join for member {member.name}")
                             await self.on_member_join(member)
+                    elif subcommand == "del_emo" and len(subargs) == 3:
+                        channel_id = int(subargs[0])
+                        message_id = int(subargs[1])
+                        member_id = int(subargs[2])
+                        channel: discord.TextChannel = message_guild.get_channel(channel_id)
+                        message: discord.Message = await channel.fetch_message(message_id)
+                        status = await utils.remove_user_reactions(message_guild, message, member_id)
                 elif command == "dump_db":
                     users_membership = self.config.roles_source.list_known_users()
                     users_names =  self.config.nicknames_source.get_all_nicknames()
@@ -277,12 +284,13 @@ class RolesBot(discord.Client):
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Dostepne polecenia:\n"
                                                                "```\n"
-                                                               "refresh [ID1 ID2 ...]  - odświeża role użytkowników których ID podane są jako argumenty. Przy braku argumentów odświeżani są wszyscy.\n"
-                                                               "status                 - wyświetla stan bota\n"
-                                                               "test newuser @user     - testuje procedurę dołączenia nowego użytkownika na użytkowniku @user\n"
-                                                               "dump_db                - zrzuca treść bazy danych\n"
-                                                               "set autorefresh czas   - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
-                                                               "set verbosity poziom   - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
+                                                               "refresh [ID1 ID2 ...]               - odświeża role użytkowników których ID podane są jako argumenty. Przy braku argumentów odświeżani są wszyscy.\n"
+                                                               "status                              - wyświetla stan bota\n"
+                                                               "test newuser @user                  - testuje procedurę dołączenia nowego użytkownika na użytkowniku @user\n"
+                                                               "test del_emo ch_id msg_id usr_id    - usuwa reakcje podanego usera spod wiadomości\n"
+                                                               "dump_db                             - zrzuca treść bazy danych\n"
+                                                               "set autorefresh czas                - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
+                                                               "set verbosity poziom                - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
                                                                "\n"
                                                                "Polecenie może być poprzedzone ID bota (zdefiniowanym w pliku konfiguracyjnym), aby wysyłać komendy do konkretnej instancji bota.\n"
                                                                "```"
