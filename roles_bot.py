@@ -103,7 +103,7 @@ class RolesBot(discord.Client):
 
     async def on_ready(self):
         hash = get_current_commit_hash()
-        self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}")
+        self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}. Dry run: {self.dry_run}")
 
         if len(self.guilds) != 1:
             self.logger.error(f"Invalid number of guilds: {len(self.guilds)}")
@@ -128,6 +128,10 @@ class RolesBot(discord.Client):
 
         async with self.channel.typing():
             await self._write_to_dedicated_channel(f"Start bota. git commit: {hash} ID: **{self.bot_id}**\n")
+
+            if self.dry_run:
+                await self._write_to_dedicated_channel(f"**Tryb dry-run aktywny**\n", logging.WARNING)
+
             await self._update_state()
 
         self._auto_refresh.start()
@@ -827,13 +831,9 @@ class RolesBot(discord.Client):
         state = "Obecny stan:\n"
 
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
-        state += f"Nieznani użytkownicy: {', '.join(unknown_user_names)}\n"
+        state += f"Nieznani użytkownicy: {len(unknown_user_names)}\n"
+        state += f"Użytkownicy którzy zaakceptowali wszystkie części regulaminu: {len(self.member_ids_accepted_regulations)}\n"
 
-        state += "Użytkownicy którzy zaakceptowali wszystkie części regulaminu:\n"
-        allowed_members = list(map(lambda id: self._build_user_details(guild, id), self.member_ids_accepted_regulations))
-        state += ", ".join(await asyncio.gather(*allowed_members))
-
-        state += "\n"
         autorefresh = self.storage.get_config()[RolesBot.AutoRefreshEntry]
         time_left =  timedelta(minutes = autorefresh) - (datetime.now() - self.last_auto_refresh)
         state += f"Czas do automatycznego odświeżenia ról: {time_left}\n"
