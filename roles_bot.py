@@ -339,7 +339,7 @@ class RolesBot(discord.Client):
 
     async def on_member_remove(self, member: discord.Member):
         guild = self.get_guild(self.guild_id)
-        discord_name, log_name = utils.build_user_name(self, guild, member.id)
+        discord_name, log_name = await utils.build_user_name(self, guild, member.id)
 
         self.logger.info(f"User {log_name} left guild")
         await self._write_to_dedicated_channel(f"Użytkownik {discord_name} opuścił serwer", logging.INFO)
@@ -470,7 +470,7 @@ class RolesBot(discord.Client):
             message_id = payload.message_id
 
             member = guild.get_member(payload.user_id)
-            name_for_discord, name_for_log = utils.build_user_name(self, guild, member_id)
+            name_for_discord, name_for_log = await utils.build_user_name(self, guild, member_id)
 
             self.logger.info(f"Updating auto roles for user {name_for_log}")
             channel = await self.fetch_channel(channel_id)
@@ -672,7 +672,7 @@ class RolesBot(discord.Client):
 
     async def _revoke_user_acceptances(self, member_id: int):
         guild = self.get_guild(self.guild_id)
-        discord_name, log_name = utils.build_user_name(self, guild, member_id)
+        discord_name, log_name = await utils.build_user_name(self, guild, member_id)
 
         self.logger.info(f"Removing acceptance of regulations for user {log_name}")
         await self._write_to_dedicated_channel(f"Usuwanie akceptacji regulaminu użytkownika {discord_name}", logging.INFO)
