@@ -760,6 +760,7 @@ class RolesBot(discord.Client):
         users_to_proceed = set(ids) & users_with_accepted_regulations
 
         if len(users_to_proceed) == 0:
+            self.logger.warning("No users to refresh their names")
             return
 
         names = self.config.nicknames_source.get_nicknames_for(users_to_proceed)
@@ -769,9 +770,13 @@ class RolesBot(discord.Client):
 
         nickname_changes = ""
         for id, name in names.items():
+            _, log_name = await utils.build_user_name(self, guild, id)
+            self.logger.debug(f"Preparing for refresh of {log_name}")
             member = guild.get_member(int(id))
 
-            if member.display_name != name:
+            if member.display_name == name:
+                self.logger.debug(f"Name already valid: {member.display_name} == {name}")
+            else:
                 self.logger.info(f"Renaming {member.display_name} ({member.name}) to {name}")
                 if self.dry_run:
                     self.logger.debug("Dry run mode, not changing name")
