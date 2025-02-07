@@ -352,7 +352,7 @@ class RolesBot(discord.Client):
 
         self.logger.info(f"User {log_name} left guild")
         await self._write_to_dedicated_channel(f"Użytkownik {discord_name} opuścił serwer", logging.INFO)
-        await self._user_becomes_unknown(member.id)
+        await self._user_becomes_unknown(member)
 
 
     async def on_raw_reaction_add(self, payload):
@@ -541,7 +541,8 @@ class RolesBot(discord.Client):
             await self._refresh_names(added_acceptance)
 
         if len(removed_acceptance) > 0:
-            await self._reset_names(removed_acceptance)
+            members = utils.get_members(guild, removed_acceptance)
+            await self._reset_names(members)
 
 
     async def _check_autorefresh(self, payload):
@@ -642,7 +643,7 @@ class RolesBot(discord.Client):
 
         if self.config.roles_source.role_for_known_users() in removed_roles:
             # user is unknown now
-            await self._user_becomes_unknown(member.id)
+            await self._user_becomes_unknown(member)
 
         return (added_roles, removed_roles)
 
@@ -674,14 +675,14 @@ class RolesBot(discord.Client):
             self.storage.set_config(config)
 
 
-    async def _user_becomes_unknown(self, member_id: int):
-        await self._reset_names([member_id])
-        await self._revoke_user_acceptances(member_id)
+    async def _user_becomes_unknown(self, member: discord.Member):
+        await self._reset_names([member])
+        await self._revoke_user_acceptances(member)
 
 
-    async def _revoke_user_acceptances(self, member_id: int):
+    async def _revoke_user_acceptances(self, member: discord.Member):
         guild = self.get_guild(self.guild_id)
-        discord_name, log_name = await utils.build_user_name(self, guild, member_id)
+        discord_name, log_name = await utils.build_user_name(self, guild, member)
 
         self.logger.info(f"Removing acceptance of regulations for user {log_name}")
         await self._write_to_dedicated_channel(f"Usuwanie akceptacji regulaminu użytkownika {discord_name}", logging.INFO)
@@ -689,7 +690,7 @@ class RolesBot(discord.Client):
         for channel_id, message_id in self.config.server_regulations_message_ids:
             message = await utils.get_message(channel_id, message_id)
 
-            await utils.remove_user_reactions(guild, message, member_id)
+            await utils.remove_user_reactions(guild, message, member.id)
 
 
     def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:
@@ -786,13 +787,10 @@ class RolesBot(discord.Client):
         await self._write_to_dedicated_channel(renames, logging.DEBUG)
 
 
-    async def _reset_names(self, ids: List[int]):
-        guild = self.get_guild(self.guild_id)
+    async def _reset_names(self, members: List[discord.Member]):
         renames = "Resetowanie nicków:\n"
 
-        for id in ids:
-            member = guild.get_member(id)
-
+        for member in members:
             self.logger.info(f"Renaming {member.display_name} ({member.name}) to {member.name}")
             try:
                 await member.edit(nick = member.name)
