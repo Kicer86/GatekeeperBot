@@ -67,7 +67,7 @@ async def build_user_name(client: discord.Client, guild: discord.Guild, member: 
             pass
 
     for_discord = escape_markdown(f"{id}" if member is None else f"{member.display_name} ({member.name})")
-    for_logs = repr(f"{id}" if member is None else f"({id} {member.name} {member.display_name})")
+    for_logs = f"{id}" if member is None else repr(f"({id} {member.name} {member.display_name})")
 
     return (for_discord, for_logs)
 
