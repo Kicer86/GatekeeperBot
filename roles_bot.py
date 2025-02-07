@@ -322,18 +322,23 @@ class RolesBot(discord.Client):
             member_id = member.id
             member_id_str = str(member_id)
 
+            guild = self.get_guild(self.guild_id)
+            discord_name, log_name = await utils.build_user_name(self, guild, member_id)
+
             if member_id_str in unknown_notified_users:
-                await self._write_to_dedicated_channel(f"Nowy użytkownik {member.name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
+                await self._write_to_dedicated_channel(f"Nowy użytkownik {discord_name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
             else:
-                await self._write_to_dedicated_channel(f"Użytkownik {member.name} nie istnieje w bazie. Wysyłanie ID na dedykowany kanał.")
+                await self._write_to_dedicated_channel(f"Użytkownik {discord_name} nie istnieje w bazie. Wysyłanie ID na dedykowany kanał.")
 
-                guild = self.get_guild(self.guild_id)
-                channel = guild.get_channel(self.config.ids_channel_id)
-                msg1: discord.Message = await channel.send(f"{member.mention} Twoje ID to:")
-                msg2: discord.Message = await channel.send(f"{member.id}")
+                if self.dry_run:
+                    self.logger.debug(f"Dry run, not sending ID for the user {log_name}")
+                else:
+                    channel = guild.get_channel(self.config.ids_channel_id)
+                    msg1: discord.Message = await channel.send(f"{member.mention} Twoje ID to:")
+                    msg2: discord.Message = await channel.send(f"{member.id}")
 
-                unknown_notified_users[member_id_str] = {"channel": channel.id, "messages": [msg1.id, msg2.id]}
-                config[RolesBot.UnknownNotifiedUsers] = unknown_notified_users
+                    unknown_notified_users[member_id_str] = {"channel": channel.id, "messages": [msg1.id, msg2.id]}
+                    config[RolesBot.UnknownNotifiedUsers] = unknown_notified_users
 
             self.storage.set_config(config)
 
