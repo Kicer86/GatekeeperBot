@@ -2,7 +2,17 @@
 import discord
 
 from discord.utils import escape_markdown
-from typing import Union
+from typing import Union, List
+
+
+def member_from_union(member: Union[int, discord.Member], guild: discord.Guild = None) -> discord.Member:
+    if isinstance(member, discord.Member):
+        return member
+    elif isinstance(member, int):
+        assert guild is not None
+        return guild.get_member(member)
+    else:
+        assert False
 
 
 async def build_user_name_for_discord_message(client: discord.Client, guild: discord.Guild, id: int) -> str:
@@ -41,14 +51,14 @@ async def build_user_name_for_log(client: discord.Client, guild: discord.Guild, 
     return result
 
 
-async def build_user_name(client: discord.Client, guild: discord.Guild, id: int) -> (str, str):
+async def build_user_name(client: discord.Client, guild: discord.Guild, member: Union[int, discord.Member]) -> (str, str):
     """
         Function return string with user name in a uniformed way.
         All special characters are being escaped.
 
         Two strings are returned: first is for discord message, second for logging
     """
-    member = guild.get_member(id)
+    member = member_from_union(member=member, guild = guild)
 
     if member is None:
         try:
@@ -105,3 +115,7 @@ async def get_message(guild: discord.Guild, channel_id: int, message_id: int) ->
     message: discord.Message = await channel.fetch_message(message_id)
 
     return message
+
+
+def get_members(guild: discord.Guild, ids: List[int]) -> List[discord.Member]:
+    return [guild.get_member(id) for id in ids]
