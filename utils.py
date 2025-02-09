@@ -5,69 +5,38 @@ from discord.utils import escape_markdown
 from typing import Union, List
 
 
-def member_from_union(member: Union[int, discord.Member], guild: discord.Guild = None) -> discord.Member:
-    if isinstance(member, discord.Member):
-        return member
-    elif isinstance(member, int):
+async def member_from_union(member_or_id: Union[int, discord.Member], guild: discord.Guild = None, client: discord.Client = None) -> discord.Member:
+    if isinstance(member_or_id, discord.Member):
+        return member_or_id
+    elif isinstance(member_or_id, int):
         assert guild is not None
-        return guild.get_member(member)
+        member = guild.get_member(member_or_id)
+
+        if member is None and client is not None:
+            try:
+                member = await client.fetch_user(member_or_id)
+            except discord.NotFound:
+                pass
+
+        return member
     else:
-        assert False
+        return None
 
 
-async def build_user_name_for_discord_message(client: discord.Client, guild: discord.Guild, id: int) -> str:
-    """
-        Function return string with user name in a uniformed way.
-        All special characters are being escaped
-    """
-    member = guild.get_member(id)
-
-    if member is None:
-        try:
-            member = await client.fetch_user(id)
-        except discord.NotFound:
-            pass
-
-    result = escape_markdown(f"{id}" if member is None else f"{member.display_name} ({member.name})")
-
-    return result
-
-
-async def build_user_name_for_log(client: discord.Client, guild: discord.Guild, id: int) -> str:
-    """
-        Function return string with user name in a uniformed way.
-        All special characters are being escaped
-    """
-    member = guild.get_member(id)
-
-    if member is None:
-        try:
-            member = await client.fetch_user(id)
-        except discord.NotFound:
-            pass
-
-    result = f"{id}" if member is None else repr(f"({id} {member.name} {member.display_name})")
-
-    return result
-
-
-async def build_user_name(client: discord.Client, guild: discord.Guild, member: Union[int, discord.Member]) -> (str, str):
+async def build_user_name(client: discord.Client, guild: discord.Guild, member_or_id: Union[int, discord.Member]) -> (str, str):
     """
         Function return string with user name in a uniformed way.
         All special characters are being escaped.
 
         Two strings are returned: first is for discord message, second for logging
     """
-    member = member_from_union(member=member, guild = guild)
 
-    if member is None:
-        try:
-            member = await client.fetch_user(id)
-        except discord.NotFound:
-            pass
+    # if member is an instance of discord.Member then it should be valid
+    assert isinstance(member_or_id, int) or isinstance(member_or_id, discord.Member)
+    member = await member_from_union(member_or_id = member_or_id, guild = guild, client = client)
 
-    for_discord = escape_markdown(f"{id}" if member is None else f"{member.display_name} ({member.name})")
-    for_logs = f"{id}" if member is None else repr(f"({id} {member.name} {member.display_name})")
+    for_discord = escape_markdown(f"{member_or_id}" if member is None else f"{member.display_name} ({member.name})")
+    for_logs = repr(f"{member_or_id}" if member is None else f"({member_or_id} {member.name} {member.display_name})")
 
     return (for_discord, for_logs)
 

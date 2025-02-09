@@ -348,7 +348,7 @@ class RolesBot(discord.Client):
 
     async def on_member_remove(self, member: discord.Member):
         guild = self.get_guild(self.guild_id)
-        discord_name, log_name = await utils.build_user_name(self, guild, member.id)
+        discord_name, log_name = await utils.build_user_name(self, guild, member)
 
         self.logger.info(f"User {log_name} left guild")
         await self._write_to_dedicated_channel(f"Użytkownik {discord_name} opuścił serwer", logging.INFO)
@@ -478,8 +478,8 @@ class RolesBot(discord.Client):
             member_id = payload.user_id
             message_id = payload.message_id
 
-            member = guild.get_member(payload.user_id)
-            name_for_discord, name_for_log = await utils.build_user_name(self, guild, member_id)
+            member = guild.get_member(member_id)
+            name_for_discord, name_for_log = await utils.build_user_name(self, guild, member)
 
             self.logger.info(f"Updating auto roles for user {name_for_log}")
             channel = await self.fetch_channel(channel_id)
@@ -770,9 +770,10 @@ class RolesBot(discord.Client):
 
         nickname_changes = ""
         for id, name in names.items():
-            _, log_name = await utils.build_user_name(self, guild, id)
+            member_id = int(id)
+            member = guild.get_member(member_id)
+            _, log_name = await utils.build_user_name(self, guild, member)
             self.logger.debug(f"Preparing for refresh of {log_name}")
-            member = guild.get_member(int(id))
 
             if member.display_name == name:
                 self.logger.debug(f"Name already valid: {member.display_name} == {name}")
@@ -809,7 +810,7 @@ class RolesBot(discord.Client):
 
     async def _build_user_details(self, guild: discord.Guild, id: int) -> str:
         status = await utils.get_user_status(self, guild, id)
-        name = await utils.build_user_name_for_discord_message(self, guild, id)
+        name, _ = await utils.build_user_name(self, guild, id)
 
         result: str = ""
 
