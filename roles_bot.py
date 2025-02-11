@@ -195,7 +195,11 @@ class RolesBot(discord.Client):
                 if command == "refresh":
                     async with self.channel.typing():
                         if len(args) == 0:
-                            await self._refresh_roles(guild.members)
+                            members = guild.members
+                            members_ids = [member.id for member in members]
+
+                            await self._refresh_roles(members)
+                            await self._refresh_names(members_ids)
                         else:
                             try:
                                 member_ids = [int(id) for id in args]
