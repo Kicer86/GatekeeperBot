@@ -688,8 +688,7 @@ class RolesBot(discord.Client):
         await self._write_to_dedicated_channel(f"Usuwanie akceptacji regulaminu użytkownika {discord_name}", logging.INFO)
 
         for channel_id, message_id in self.config.server_regulations_message_ids:
-            message = await utils.get_message(channel_id, message_id)
-
+            message = await utils.get_message(guild, channel_id, message_id)
             await utils.remove_user_reactions(guild, message, member.id)
 
 
