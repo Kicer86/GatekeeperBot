@@ -802,6 +802,8 @@ class RolesBot(discord.Client):
                 await member.edit(nick = member.name)
             except discord.errors.Forbidden:
                 renames += f"{member.display_name} ({member.name}) -> {member.name} (**Nieskuteczne, brak uprawnień**)\n"
+            except discord.errors.NotFound:
+                renames += f"{member.display_name} ({member.name}) -> {member.name} (**Nieskuteczne, użytkownik opuścił serwer**)\n"
             else:
                 renames += f"{member.display_name} ({member.name}) -> {member.name}\n"
 
