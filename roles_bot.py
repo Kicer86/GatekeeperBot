@@ -525,19 +525,19 @@ class RolesBot(discord.Client):
         affected_users = []
 
         for added in added_acceptance:
-            member = guild.get_member(added)
-            await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} zaakceptował regulamin w całości.")
-            affected_users.append(member)
+            display_name, _ = await utils.build_user_name(self, guild, added)
+            await self._write_to_dedicated_channel(f"Użytkownik {display_name} zaakceptował regulamin w całości.")
+            affected_users.append(added)
 
         for removed in removed_acceptance:
-            member = guild.get_member(removed)
-            await self._write_to_dedicated_channel(f"Użytkownik {member.display_name} odrzucił regulamin (lub jego fragment).")
-            affected_users.append(member)
+            display_name, _ = await utils.build_user_name(self, guild, removed)
+            await self._write_to_dedicated_channel(f"Użytkownik {display_name} odrzucił regulamin (lub jego fragment).")
+            affected_users.append(removed)
 
         if len(affected_users) > 1:
             self.logger.warning(f"There was one change expected, yet got {len(affected_users)}")
 
-        for member in affected_users:
+        for member.id in affected_users:
             added_roles, removed_roles = await self._update_member_roles(member)
             await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
 
