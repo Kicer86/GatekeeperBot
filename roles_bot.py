@@ -929,7 +929,6 @@ class RolesBot(discord.Client):
         return user_regulations_status
 
 
-
     def _collect_users_who_accepted_all_regulations(self, user_regulations_status: Dict[int, Set]) -> Set[int]:
         """
             Collect users who accepted regulations
