@@ -59,6 +59,7 @@ class BotConfig:
     user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
     ids_channel_id: int                                     # channel to put user ids
     guild_id: int                                           # allowed guild ID
+    system_users: List[int]                                 # user ids to ignore during mass operations
 
 
 def get_current_commit_hash():
@@ -197,7 +198,7 @@ class RolesBot(discord.Client):
                 if command == "refresh":
                     async with self.channel.typing():
                         if len(args) == 0:
-                            members = guild.members
+                            members = self._collect_all_users(guild)
                             members_ids = [member.id for member in members]
 
                             await self._refresh_roles(members)
@@ -443,8 +444,10 @@ class RolesBot(discord.Client):
             self.last_auto_refresh = now
 
             guild = self.get_guild(self.guild_id)
-            await self._refresh_roles(guild.members)
-            user_ids = [member.id for member in guild.members]
+            members = self._collect_all_users(guild)
+            user_ids = [member.id for member in members]
+
+            await self._refresh_roles(members)
             await self._refresh_names(user_ids)
 
 
@@ -902,17 +905,22 @@ class RolesBot(discord.Client):
         known_user_role_name = self.config.roles_source.role_for_known_users()
         guild = self.get_guild(self.guild_id)
 
-        known_user_role = discord.utils.get(guild.roles, name=known_user_role_name)
-        members_without_role = {member.id for member in guild.members if known_user_role not in member.roles}
+        known_user_role = discord.utils.get(guild.roles, name = known_user_role_name)
+        members = self._collect_all_users(guild)
+        members_without_role = {member.id for member in members if known_user_role not in member.roles}
 
         return members_without_role
+
+
+    def _collect_all_users(self, guild: discord.Guild) -> List[discord.Member]:
+        members = [member for member in guild.members if member.id not in self.config.system_users]
+        return members
 
 
     async def _collect_user_reactions_on_regulations(self) -> Dict[int, Set]:
         """
             function lists which users reacted (accepted) which regulation messages
         """
-
         guild = self.get_guild(self.guild_id)
 
         user_regulations_status = defaultdict(set)
