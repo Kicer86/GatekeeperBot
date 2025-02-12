@@ -88,3 +88,19 @@ async def get_message(guild: discord.Guild, channel_id: int, message_id: int) ->
 
 def get_members(guild: discord.Guild, ids: List[int]) -> List[discord.Member]:
     return [guild.get_member(id) for id in ids]
+
+
+async def collect_members_reacting_on_message(message: discord.Message, reaction_emoji: str = None) -> List[discord.Member]:
+    """
+        Collect all users who reacted with given reaction under message
+        For reaction == None, all reactions are considered
+    """
+
+    members = set()
+
+    for reaction in message.reactions:
+        emoji = reaction.emoji
+        if reaction_emoji is None or str(emoji) == reaction_emoji:
+            members = {user async for user in reaction.users()}
+
+    return members
