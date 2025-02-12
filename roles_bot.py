@@ -4,6 +4,7 @@ import discord
 import logging
 import subprocess
 
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from discord.utils import escape_markdown
@@ -73,6 +74,7 @@ class RolesBot(discord.Client):
     IDEntry = "bot_id"
     DryRunEntry = "dry_run"
     UnknownNotifiedUsers = "unknown_notified_users"
+    AcceptanceEmoji = "👍"
 
     def __init__(self, config: BotConfig, storage_dir: str, logger):
         intents = discord.Intents.default()
@@ -510,12 +512,26 @@ class RolesBot(discord.Client):
         if full_id not in self.config.server_regulations_message_ids:
             return
 
-        guild = self.get_guild(payload.guild_id)
-        member = guild.get_member(payload.user_id)
+        if payload.guild_id != self.guild_id:
+            self.logger.error(f"Payload for _check_reaction_on_regulations came from unknown guild: {payload.guild_id} != {self.guild_id}")
+            return
+
+        if str(payload.emoji) != RolesBot.AcceptanceEmoji:
+            return
+
+        member_id = payload.user_id
+
+        if added:
+            self.user_regulations_status[member_id].add(full_id)
+        else:
+            self.user_regulations_status[member_id].discard(full_id)
+
+        guild = self.get_guild(self.guild_id)
+        member = guild.get_member(member_id)
         self.logger.info(f"User {member.name} reacted on regulations message: {channel_id}/{message_id}")
 
         current_list_of_users = self.member_ids_accepted_regulations
-        new_list_of_users = await self._collect_users_who_accepted_all_regulations()
+        new_list_of_users = self._collect_users_who_accepted_all_regulations(self.user_regulations_status)
 
         removed_acceptance = current_list_of_users - new_list_of_users
         added_acceptance = new_list_of_users - current_list_of_users
@@ -871,7 +887,8 @@ class RolesBot(discord.Client):
         """
 
         self.unknown_users = self._collect_unknown_users()
-        self.member_ids_accepted_regulations = await self._collect_users_who_accepted_all_regulations()
+        self.user_regulations_status = await self._collect_user_reactions_on_regulations()
+        self.member_ids_accepted_regulations  = self._collect_users_who_accepted_all_regulations(self.user_regulations_status)
 
         if self._is_level_sufficent_for_send(logging.DEBUG):
             await self._print_status()
@@ -891,27 +908,34 @@ class RolesBot(discord.Client):
         return members_without_role
 
 
-    async def _collect_users_who_accepted_all_regulations(self) -> Set[int]:
+    async def _collect_user_reactions_on_regulations(self) -> Dict[int, Set]:
         """
-            Collect users who accepted regulations
+            function lists which users reacted (accepted) which regulation messages
         """
+
         guild = self.get_guild(self.guild_id)
 
-        accepted_messages = []
+        user_regulations_status = defaultdict(set)
 
         for channel_id, message_id in self.config.server_regulations_message_ids:
             regulations_channel = guild.get_channel(channel_id)
             acceptance_message = await regulations_channel.fetch_message(message_id)
 
-            members = set()
+            members = await utils.collect_members_reacting_on_message(acceptance_message, RolesBot.AcceptanceEmoji)
 
-            for reaction in acceptance_message.reactions:
-                emoji = reaction.emoji
-                if str(emoji) == "👍":
-                    members = {user.id async for user in reaction.users()}
+            for member in members:
+                user_regulations_status[member.id].add((channel_id, message_id))
 
-            accepted_messages.append(members)
+        return user_regulations_status
 
-        members_who_accepted_all = set.intersection(*accepted_messages)
 
-        return members_who_accepted_all
+
+    def _collect_users_who_accepted_all_regulations(self, user_regulations_status: Dict[int, Set]) -> Set[int]:
+        """
+            Collect users who accepted regulations
+        """
+
+        required_acceptations = { channel_and_message for channel_and_message in self.config.server_regulations_message_ids }
+        fully_accepted_users = { member_id for member_id, accepted_messages in user_regulations_status.items() if accepted_messages == required_acceptations }
+
+        return fully_accepted_users
