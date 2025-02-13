@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Tuple, Set
 
 from . import utils
-from roles_bot.configuration import Configuration
+from .configuration import Configuration
 
 
 class UserStatusFlags(Enum):
