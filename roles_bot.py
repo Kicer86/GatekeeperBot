@@ -556,9 +556,10 @@ class RolesBot(discord.Client):
         if len(affected_users) > 1:
             self.logger.warning(f"There was one change expected, yet got {len(affected_users)}")
 
-        for member.id in affected_users:
-            added_roles, removed_roles = await self._update_member_roles(member)
-            await self._single_user_report(f"Aktualizacja ról użytkownika {member.name} zakończona.", added_roles, removed_roles)
+        for member_id in affected_users:
+            affected_member = guild.get_member(member_id)
+            added_roles, removed_roles = await self._update_member_roles(affected_member)
+            await self._single_user_report(f"Aktualizacja ról użytkownika {affected_member.name} zakończona.", added_roles, removed_roles)
 
         if len(added_acceptance) > 0:
             await self._refresh_names(added_acceptance)
