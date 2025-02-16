@@ -90,7 +90,7 @@ def get_members(guild: discord.Guild, ids: List[int]) -> List[discord.Member]:
     return [guild.get_member(id) for id in ids]
 
 
-async def collect_members_reacting_on_message(message: discord.Message, reaction_emoji: str = None) -> List[discord.Member]:
+async def collect_members_reacting_on_message(message: discord.Message, reaction_emoji: str = None) -> List[Union[discord.Member, discord.User]]:
     """
         Collect all users who reacted with given reaction under message
         For reaction == None, all reactions are considered
