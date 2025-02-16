@@ -291,6 +291,10 @@ class RolesBot(discord.Client):
                     else:
                         await self._apply_member_roles(member, [], [role_name])
 
+                elif command == "refresh_autoroles":
+                    async with self.channel.typing():
+                        await self._refresh_autoroles()
+
                 elif command == "help":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Dostepne polecenia:\n"
@@ -825,6 +829,33 @@ class RolesBot(discord.Client):
         renames += nickname_changes
 
         await self._write_to_dedicated_channel(renames, logging.DEBUG)
+
+
+    async def _refresh_autoroles(self):
+        guild = self.get_guild(self.guild_id)
+        members = self._collect_all_users(guild)
+
+        roles = [role.name for role in guild.roles]
+        roles_to_apply = defaultdict(set)
+
+        self.logger.info("Collecting users with missing roles")
+        for channel_id in self.config.auto_roles_channels:
+            channel: discord.TextChannel = await guild.fetch_channel(channel_id)
+            async for message in channel.history():
+                content = message.content
+
+                if content in roles:
+                    role_name = content
+                    members = await utils.collect_members_reacting_on_message(message, RolesBot.AcceptanceEmoji)
+                    for member in members:
+                        if isinstance(member, discord.Member) and not utils.has_role(member, role_name):
+                            roles_to_apply[member].add(role_name)
+
+        self.logger.debug(f"Found {len(roles_to_apply)} users with missing roles")
+        for member, roles in roles_to_apply.items():
+            discord_name, _ = await utils.build_user_name(self, guild, member)
+            await self._write_to_dedicated_channel(f"Przywracanie brakujących ról użytkownikowi {discord_name}: {', '.join(roles)}")
+            await self._apply_member_roles(member, roles, [])
 
 
     async def _reset_names(self, members: List[discord.Member]):
