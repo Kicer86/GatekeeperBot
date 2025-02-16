@@ -956,6 +956,9 @@ class RolesBot(discord.Client):
 
 
     def _collect_all_users(self, guild: discord.Guild) -> List[discord.Member]:
+        """
+            Return all users but system ones
+        """
         members = [member for member in guild.members if member.id not in self.config.system_users]
         return members
 
