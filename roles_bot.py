@@ -531,7 +531,10 @@ class RolesBot(discord.Client):
 
         guild = self.get_guild(self.guild_id)
         member = guild.get_member(member_id)
-        self.logger.info(f"User {member.name} reacted on regulations message: {channel_id}/{message_id}")
+        if member is None:
+            self.logger.info(f"Got reaction on regulations message: {channel_id}/{message_id} by user who most likely left guild: {member_id}")
+        else:
+            self.logger.info(f"User {member.name} reacted on regulations message: {channel_id}/{message_id}")
 
         current_list_of_users = self.member_ids_accepted_regulations
         new_list_of_users = self._collect_users_who_accepted_all_regulations(self.user_regulations_status)
@@ -558,8 +561,12 @@ class RolesBot(discord.Client):
 
         for member_id in affected_users:
             affected_member = guild.get_member(member_id)
-            added_roles, removed_roles = await self._update_member_roles(affected_member)
-            await self._single_user_report(f"Aktualizacja ról użytkownika {affected_member.name} zakończona.", added_roles, removed_roles)
+
+            if affected_member is None:
+                self.logger.debug(f"User {member_id} was not found in the guild, skipping roles update")
+            else:
+                added_roles, removed_roles = await self._update_member_roles(affected_member)
+                await self._single_user_report(f"Aktualizacja ról użytkownika {affected_member.name} zakończona.", added_roles, removed_roles)
 
         if len(added_acceptance) > 0:
             await self._refresh_names(added_acceptance)
