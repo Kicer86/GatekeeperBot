@@ -104,3 +104,7 @@ async def collect_members_reacting_on_message(message: discord.Message, reaction
             members = {user async for user in reaction.users()}
 
     return members
+
+
+def has_role(member: discord.Member, role_name: str) -> bool:
+    return any(role.name == role_name for role in member.roles)
