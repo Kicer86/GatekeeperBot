@@ -3,6 +3,7 @@ import asyncio
 import discord
 import logging
 import subprocess
+import time
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -742,14 +743,17 @@ class RolesBot(discord.Client):
         users_query = {member: self._build_user_flags(member.id) for member in members}
         new_roles = self.config.roles_source.get_users_roles(users_query)
 
-        for member_id, roles in new_roles.items():
+        for member_id, (add, remove) in new_roles.items():
             member = guild.get_member(member_id)
             self.logger.debug(f"Processing user {repr(member.name)}")
 
-            add = roles[0]
-            remove = roles[1]
-
+            start = time.time()
             added, removed = await self._apply_member_roles(member, add, remove)
+            end = time.time()
+
+            elsaped = end - start
+            if elsaped > 0.4:
+                self.logger.warning(f"Time consumed in _apply_member_roles(): {end - start}")
 
             if len(added) > 0:
                 added_roles[member.name] = added
