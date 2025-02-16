@@ -84,6 +84,7 @@ class RolesBot(discord.Client):
         intents.members = True
         super().__init__(intents = intents)
 
+        self.bot_initialized = False
         self.config = config
         self.channel = None
         self.logger = logger
@@ -106,6 +107,10 @@ class RolesBot(discord.Client):
 
 
     async def on_ready(self):
+        if self.bot_initialized:
+            self._write_to_dedicated_channel("Restart połączenia z discordem.")
+            return
+
         hash = get_current_commit_hash()
         self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}. Dry run: {self.dry_run}")
 
@@ -139,6 +144,7 @@ class RolesBot(discord.Client):
             await self._update_state()
 
         self._auto_refresh.start()
+        self.bot_initialized = True
 
 
     async def on_guild_join(self, guild):
