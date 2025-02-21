@@ -545,6 +545,9 @@ class RolesBot(discord.Client):
         """
             Check if reaction happened on roles autorefresh message, and do refresh if it did
         """
+        if self.config.user_auto_refresh_roles_message_id is None:
+            return
+
         channel_id = payload.channel_id
         if channel_id != self.config.user_auto_refresh_roles_message_id[0]:
             return
