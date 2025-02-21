@@ -6,61 +6,15 @@ import subprocess
 import time
 
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from discord.utils import escape_markdown
 from discord.ext import tasks
-from enum import Enum
 from typing import Any, Dict, List, Tuple, Set
 
 from . import utils
 from .configuration import Configuration
-
-
-class UserStatusFlags(Enum):
-    Known = 1
-    Accepted = 2
-
-
-class RolesSource:
-    def get_user_roles(self, member: discord.Member, flags: Dict[UserStatusFlags, bool]) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
-        pass
-
-    def get_users_roles(self, members: Dict[discord.Member, Dict[UserStatusFlags, bool]]) -> Dict[int, Tuple[List[str], List[str]]]:    # get roles for members. Returns dict of surest with tupe og roles to be added and roles to be removed
-        pass
-
-    def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who reacted on a message in auto roles channel
-        pass
-
-    def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:  # get roles for member who unreacted on a message in auto roles channel
-        pass
-
-    def role_for_known_users(self) -> str:
-        pass
-
-    def list_known_users(self) -> Dict[str, Any]:
-        pass
-
-
-class NicknamesSource:
-    def get_nicknames_for(self, member_ids: List[int]) -> Dict[str, str]:
-        pass
-
-    def get_all_nicknames(self) -> Dict[str, str]:
-        pass
-
-
-@dataclass
-class BotConfig:
-    dedicated_channel: int                                  # channel id
-    roles_source: RolesSource
-    nicknames_source: NicknamesSource
-    auto_roles_channels: List[int]                          # channel ids
-    server_regulations_message_ids: List[Tuple[int, int]]   # list of (channel id, message id)
-    user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
-    ids_channel_id: int                                     # channel to put user ids
-    guild_id: int                                           # allowed guild ID
-    system_users: List[int]                                 # user ids to ignore during mass operations
+from .bot_config import BotConfig
+from .data_sources import UserStatusFlags
 
 
 def get_current_commit_hash():
