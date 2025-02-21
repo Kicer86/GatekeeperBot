@@ -880,8 +880,9 @@ class RolesBot(discord.Client):
         autoroles_string = " ".join(autoroles_urls)
         state += f"Obserwowane kanały z autorolami: {autoroles_string}\n"
 
-        autorefresh_string = utils.generate_link(self.guild_id, self.config.user_auto_refresh_roles_message_id)
-        state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
+        if self.config.user_auto_refresh_roles_message_id:
+            autorefresh_string = utils.generate_link(self.guild_id, self.config.user_auto_refresh_roles_message_id)
+            state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
 
         regulations_urls = [utils.generate_link(self.guild_id, id) for id in self.config.server_regulations_message_ids]
         regulations_string = " ".join(regulations_urls)
