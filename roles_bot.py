@@ -768,6 +768,9 @@ class RolesBot(discord.Client):
 
         nickname_changes = ""
         for id, name in names.items():
+            if name is None:
+                continue
+
             member_id = int(id)
             member = guild.get_member(member_id)
             _, log_name = await utils.build_user_name(self, guild, member)
