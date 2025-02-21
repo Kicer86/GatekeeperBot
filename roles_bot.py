@@ -108,7 +108,7 @@ class RolesBot(discord.Client):
 
     async def on_ready(self):
         if self.bot_initialized:
-            self._write_to_dedicated_channel("Restart połączenia z discordem.")
+            await self._write_to_dedicated_channel("Restart połączenia z discordem.")
             return
 
         hash = get_current_commit_hash()
