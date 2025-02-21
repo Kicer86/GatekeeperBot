@@ -1,6 +1,6 @@
 
 import discord
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 from enum import Enum
 
 
@@ -30,7 +30,7 @@ class RolesSource:
 
 
 class NicknamesSource:
-    def get_nicknames_for(self, member_ids: List[int]) -> Dict[str, str]:
+    def get_nicknames_for(self, member_ids: List[int]) -> Dict[str, Union[str, None]]:
         pass
 
     def get_all_nicknames(self) -> Dict[str, str]:
