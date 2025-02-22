@@ -688,7 +688,10 @@ class RolesBot(discord.Client):
 
         for channel_id, message_id in self.config.server_regulations_message_ids:
             message = await utils.get_message(guild, channel_id, message_id)
-            await utils.remove_user_reactions(guild, message, member.id)
+            status = await utils.remove_user_reactions(guild, message, member.id)
+
+            if not status:
+                self.logger.warning("Unable to remove user's reaction")
 
 
     def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:
