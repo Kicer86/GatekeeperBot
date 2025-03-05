@@ -15,7 +15,7 @@ from . import utils
 from .configuration import Configuration
 from .bot_config import BotConfig
 from .data_sources import UserStatusFlags
-
+from .event_processor import *
 
 def get_current_commit_hash():
     try:
@@ -48,6 +48,8 @@ class RolesBot(discord.Client):
         self.unknown_users = set()
         self.last_auto_refresh = datetime.now()
         self.message_prefix = self.storage.get_config().get("message_prefix", "")
+
+        self.event_processor = EventProcessor()
 
         # setup default values in config
         self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
@@ -328,6 +330,8 @@ class RolesBot(discord.Client):
 
 
     async def on_raw_reaction_add(self, payload):
+        self.event_processor.add_event(EventType.ReactionOnAutoRole, payload.user_id, payload.message_id)
+
         await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
         await self._check_reaction_on_regulations(payload, True)
         await self._check_autorefresh(payload)
