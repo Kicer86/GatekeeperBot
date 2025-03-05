@@ -64,7 +64,7 @@ async def remove_user_reactions(guild: discord.Guild, message: discord.Message, 
             async for user in reaction.users():
                 if user.id == member_id:
                     await reaction.remove(user)
-    except discord.Forbidden:
+    except discord.Forbidden as e:
         return False
     except discord.HTTPException as e:
         return False

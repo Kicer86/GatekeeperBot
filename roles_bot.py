@@ -6,61 +6,15 @@ import subprocess
 import time
 
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from discord.utils import escape_markdown
 from discord.ext import tasks
-from enum import Enum
 from typing import Any, Dict, List, Tuple, Set
 
 from . import utils
 from .configuration import Configuration
-
-
-class UserStatusFlags(Enum):
-    Known = 1
-    Accepted = 2
-
-
-class RolesSource:
-    def get_user_roles(self, member: discord.Member, flags: Dict[UserStatusFlags, bool]) -> Tuple[List[str], List[str]]:                # get roles for member. Returns (roles to be added, roles to be removed).
-        pass
-
-    def get_users_roles(self, members: Dict[discord.Member, Dict[UserStatusFlags, bool]]) -> Dict[int, Tuple[List[str], List[str]]]:    # get roles for members. Returns dict of surest with tupe og roles to be added and roles to be removed
-        pass
-
-    def get_user_auto_roles_reaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:    # get roles for member who reacted on a message in auto roles channel
-        pass
-
-    def get_user_auto_roles_unreaction(self, member: discord.Member, message: discord.Message) -> Tuple[List[str], List[str]]:  # get roles for member who unreacted on a message in auto roles channel
-        pass
-
-    def role_for_known_users(self) -> str:
-        pass
-
-    def list_known_users(self) -> Dict[str, Any]:
-        pass
-
-
-class NicknamesSource:
-    def get_nicknames_for(self, member_ids: List[int]) -> Dict[str, str]:
-        pass
-
-    def get_all_nicknames(self) -> Dict[str, str]:
-        pass
-
-
-@dataclass
-class BotConfig:
-    dedicated_channel: int                                  # channel id
-    roles_source: RolesSource
-    nicknames_source: NicknamesSource
-    auto_roles_channels: List[int]                          # channel ids
-    server_regulations_message_ids: List[Tuple[int, int]]   # list of (channel id, message id)
-    user_auto_refresh_roles_message_id: Tuple[int, int]     # channel id, message id
-    ids_channel_id: int                                     # channel to put user ids
-    guild_id: int                                           # allowed guild ID
-    system_users: List[int]                                 # user ids to ignore during mass operations
+from .bot_config import BotConfig
+from .data_sources import UserStatusFlags
 
 
 def get_current_commit_hash():
@@ -591,6 +545,9 @@ class RolesBot(discord.Client):
         """
             Check if reaction happened on roles autorefresh message, and do refresh if it did
         """
+        if self.config.user_auto_refresh_roles_message_id is None:
+            return
+
         channel_id = payload.channel_id
         if channel_id != self.config.user_auto_refresh_roles_message_id[0]:
             return
@@ -731,7 +688,10 @@ class RolesBot(discord.Client):
 
         for channel_id, message_id in self.config.server_regulations_message_ids:
             message = await utils.get_message(guild, channel_id, message_id)
-            await utils.remove_user_reactions(guild, message, member.id)
+            status = await utils.remove_user_reactions(guild, message, member.id)
+
+            if not status:
+                self.logger.warning("Unable to remove user's reaction")
 
 
     def _build_user_flags(self, member_id: int) -> Dict[UserStatusFlags, bool]:
@@ -814,6 +774,9 @@ class RolesBot(discord.Client):
 
         nickname_changes = ""
         for id, name in names.items():
+            if name is None:
+                continue
+
             member_id = int(id)
             member = guild.get_member(member_id)
             _, log_name = await utils.build_user_name(self, guild, member)
@@ -920,8 +883,9 @@ class RolesBot(discord.Client):
         autoroles_string = " ".join(autoroles_urls)
         state += f"Obserwowane kanały z autorolami: {autoroles_string}\n"
 
-        autorefresh_string = utils.generate_link(self.guild_id, self.config.user_auto_refresh_roles_message_id)
-        state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
+        if self.config.user_auto_refresh_roles_message_id:
+            autorefresh_string = utils.generate_link(self.guild_id, self.config.user_auto_refresh_roles_message_id)
+            state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
 
         regulations_urls = [utils.generate_link(self.guild_id, id) for id in self.config.server_regulations_message_ids]
         regulations_string = " ".join(regulations_urls)
