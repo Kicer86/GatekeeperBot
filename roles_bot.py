@@ -48,8 +48,7 @@ class RolesBot(discord.Client):
         self.unknown_users = set()
         self.last_auto_refresh = datetime.now()
         self.message_prefix = self.storage.get_config().get("message_prefix", "")
-
-        self.event_processor = EventProcessor()
+        self.event_processor = None
 
         # setup default values in config
         self.storage.set_default(RolesBot.AutoRefreshEntry, 1440)
@@ -66,6 +65,8 @@ class RolesBot(discord.Client):
         if self.bot_initialized:
             await self._write_to_dedicated_channel("Restart połączenia z discordem.")
             return
+
+        self.event_processor = EventProcessor(self.loop)
 
         hash = get_current_commit_hash()
         self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}. Dry run: {self.dry_run}")

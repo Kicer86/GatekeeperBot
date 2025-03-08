@@ -18,12 +18,11 @@ class ReactionOnMessage:
 
 
 class EventProcessor:
-    def __init__(self):
+    def __init__(self, loop):
         self.user_events = defaultdict(list)
         self.lock = asyncio.Lock()
         self.wakeup_event = asyncio.Event()
 
-        loop = asyncio.get_event_loop()
         loop.create_task(self.process_events())
 
 
@@ -35,7 +34,7 @@ class EventProcessor:
 
     async def _safe_add_event(self, type: EventType, user_id: int, data: Union[ReactionOnMessage], time):
         async with self.lock:
-            self.user_events[user_id].append(type, data, time)
+            self.user_events[user_id].append((type, data, time))
             self.wakeup_event.set()
 
 
@@ -43,6 +42,8 @@ class EventProcessor:
         while True:
             await self.wakeup_event.wait()
             self.wakeup_event.clear()
+
+            print(f"Waking up")
 
             async with self.lock:
                 print(f"Event queue length: {len(self.user_events)}")
