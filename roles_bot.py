@@ -331,7 +331,7 @@ class RolesBot(discord.Client):
 
 
     async def on_raw_reaction_add(self, payload):
-        self.event_processor.add_event(EventType.ReactionOnAutoRole, payload.user_id, payload.message_id)
+        self.event_processor.add_event(EventType.ReactionOn, payload.user_id, ReactionOnMessage(message_id = payload.message_id))
 
         await self._update_auto_roles(payload, self.config.roles_source.get_user_auto_roles_reaction)
         await self._check_reaction_on_regulations(payload, True)
