@@ -92,6 +92,7 @@ class EventProcessor:
         message_reactions = defaultdict(int)
         last_reaction_time = defaultdict(int)
 
+        # collect sum of reactions / unreaction for single message
         for event in events:
             if event.type == EventType.ReactionOn:
                 assert isinstance(event.data, ReactionOnMessage)
@@ -104,7 +105,7 @@ class EventProcessor:
             else:
                 new_events.append(event)
 
-        # process total result or react / unreact acions
+        # collapse all reactions for the same message into one (or zero) events
         for reaction_data, count in message_reactions.items():
             assert count == -1 or count == 0 or count == 1
 
