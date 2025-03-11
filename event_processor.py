@@ -2,8 +2,9 @@
 import asyncio
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import List, Union
+from typing import Dict, List, Union
 from enum import Enum
 
 
@@ -30,15 +31,28 @@ class EventDetails:
     time: int
 
 
+@dataclass
+class EventActions:
+    on_reactionOnMessage: Callable[[int, any], None]
+    on_unreactionOnMessage : Callable[[int, any], None]
+
+
 class EventProcessor:
-    def __init__(self, loop: asyncio.AbstractEventLoop):
+    def __init__(self, loop: asyncio.AbstractEventLoop, event_actions: EventActions, treshhold: float = 1.0):
         self.user_events = defaultdict(list)
         self.lock = asyncio.Lock()
         self.wakeup_event = asyncio.Event()
         self.auto_wakeup_task = None
         self.loop: asyncio.AbstractEventLoop = loop
+        self.treshhold = treshhold
+        self.event_actions = event_actions
 
         loop.create_task(self.process_events())
+
+
+    async def get_users_events(self) -> Dict[int, List[EventDetails]]:
+         async with self.lock:
+             return self.user_events
 
 
     def add_event(self, type: EventType, user_id: int, data: Union[ReactionOnMessage]):
@@ -68,16 +82,45 @@ class EventProcessor:
             async with self.lock:
                 print(f"Event queue length: {len(self.user_events)}")
 
-                for user, events in self.user_events.items():
+                # optimize events
+                for user_id, events in self.user_events.items():
                     events = self._optimize_events(events)
 
-                    if len(events) == 0:
-                        del self.user_events[user]
-                    else:
-                        self.user_events[user] = events
+                    self.user_events[user_id] = events
 
-                if len(self.user_events) > 0:
+                # drop empty lists of events
+                self.user_events = {user_id: events for user_id, events in self.user_events.items() if len(events) > 0}
+
+                # sort events
+                for user_id, events in self.user_events.items():
+                    events = self._optimize_events(events)
+                    events.sort(key = lambda event: event.time)
+                    self.user_events[user_id] = events
+
+                # execute events by time
+                now = time.time()
+                for user_id, events in self.user_events.items():
+                    new_events = []
+                    for event in events:
+                        if now - event.time > self.treshhold:
+                            if event.type == EventType.ReactionOn:
+                                self.event_actions.on_reactionOnMessage(user_id, event.data)
+                            elif event.type == EventType.UnreactionOn:
+                                self.event_actions.on_unreactionOnMessage(user_id, event.data)
+                            else:
+                                assert False
+                        else:
+                            new_events.append(event)
+
+                    self.user_events[user_id] = new_events
+
+                # suspend or hibernate
+                users_to_process = len(self.user_events)
+                if users_to_process > 0:
+                    print(f"{users_to_process} left with unprocessed events. Checking on them soon")
                     self.auto_wakeup_task = self.loop.create_task(self._auto_wakup())
+                else:
+                    print("No events left, entering hibernation state")
 
 
     async def _auto_wakup(self):
@@ -110,8 +153,8 @@ class EventProcessor:
             assert count == -1 or count == 0 or count == 1
 
             if count == -1:
-                new_events.append(EventDetails(type == EventType.UnreactionOn, data = reaction_data, time = last_reaction_time[reaction_data]))
+                new_events.append(EventDetails(type = EventType.UnreactionOn, data = reaction_data, time = last_reaction_time[reaction_data]))
             elif count == 1:
-                new_events.append(EventDetails(type == EventType.ReactionOn, data = reaction_data, time = last_reaction_time[reaction_data]))
+                new_events.append(EventDetails(type = EventType.ReactionOn, data = reaction_data, time = last_reaction_time[reaction_data]))
 
         return new_events
