@@ -99,7 +99,9 @@ class EventProcessor:
             for user_id, events in self.user_events.items():
                 new_events = []
                 for event in events:
-                    if now - event.time > self.treshhold:
+                    diff = now - event.time
+                    if diff >= self.treshhold:
+                        print("Executing event")
                         if event.type == EventType.ReactionOn:
                             self.event_actions.on_reactionOnMessage(user_id, event.data)
                         elif event.type == EventType.UnreactionOn:
@@ -110,6 +112,9 @@ class EventProcessor:
                         new_events.append(event)
 
                 self.user_events[user_id] = new_events
+
+            # drop empty lists of events
+            self.user_events = {user_id: events for user_id, events in self.user_events.items() if len(events) > 0}
 
             # suspend or hibernate
             users_to_process = len(self.user_events)
