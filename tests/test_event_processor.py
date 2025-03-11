@@ -24,5 +24,22 @@ class TestRolesBot(unittest.IsolatedAsyncioTestCase):
         actionMock.on_unreactionOnMessage.assert_not_called()
 
 
+    async def test_reaction_unreacion_on_message(self):
+        loop = asyncio.get_running_loop()
+
+        actionMock = EventActions(
+            on_reactionOnMessage = MagicMock(),
+            on_unreactionOnMessage = MagicMock()
+        )
+        processor = EventProcessor(loop = loop, event_actions = actionMock)
+
+        processor.add_event(type = EventType.ReactionOn, user_id = 123, data = ReactionOnMessage(message_id = 256))
+        processor.add_event(type = EventType.UnreactionOn, user_id = 123, data = ReactionOnMessage(message_id = 256))
+        await processor.wait_for_idle()
+
+        # expect messages to annihilate
+        actionMock.on_reactionOnMessage.assert_not_called()
+        actionMock.on_unreactionOnMessage.assert_not_called()
+
 if __name__ == "__main__":
     unittest.main()
