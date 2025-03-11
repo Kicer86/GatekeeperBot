@@ -1,0 +1,25 @@
+
+name: Linux-unittests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Python dependencies
+      uses: py-actions/py-dependency-install@v4
+      with:
+        path: "requirements.txt"
+
+    - name: Run unit tests
+      run: |
+        pip install pytest
+        python3 -m pytest tests
