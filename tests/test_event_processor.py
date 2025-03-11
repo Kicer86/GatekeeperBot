@@ -18,7 +18,7 @@ class TestRolesBot(unittest.IsolatedAsyncioTestCase):
         processor = EventProcessor(loop = loop, event_actions = actionMock)
 
         processor.add_event(type = EventType.ReactionOn, user_id = 123, data = ReactionOnMessage(message_id = 256))
-        await asyncio.sleep(2)
+        await processor.wait_for_idle()
 
         actionMock.on_reactionOnMessage.assert_called_once_with(123, ReactionOnMessage(message_id = 256))
         actionMock.on_unreactionOnMessage.assert_not_called()
