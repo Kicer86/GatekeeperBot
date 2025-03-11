@@ -4,7 +4,7 @@ import time
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Dict, List, Union
+from typing import Any, Dict, List, TypeAlias, Union
 from enum import Enum
 
 
@@ -24,24 +24,26 @@ class ReactionOnMessage:
         return self.message_id == other.message_id
 
 
+EventData: TypeAlias = Union[ReactionOnMessage]
+
 @dataclass
 class EventDetails:
     type: EventType
-    data: Union[ReactionOnMessage]
-    time: int
+    data: EventData
+    time: float
 
 
 @dataclass
 class EventActions:
-    on_reactionOnMessage: Callable[[int, any], None]
-    on_unreactionOnMessage : Callable[[int, any], None]
+    on_reactionOnMessage: Callable[[int, Any], None]
+    on_unreactionOnMessage : Callable[[int, Any], None]
 
 
 class EventProcessor:
     def __init__(self, loop: asyncio.AbstractEventLoop, event_actions: EventActions, treshhold: float = 1.0):
-        self.user_events = defaultdict(list)
+        self.user_events: dict[int, Any] = defaultdict(list)
         self.wakeup_event = asyncio.Event()
-        self.auto_wakeup_task: asyncio.tasks.Task = None
+        self.auto_wakeup_task: Union[asyncio.tasks.Task, None] = None
         self.loop: asyncio.AbstractEventLoop = loop
         self.treshhold = treshhold
         self.event_actions = event_actions
@@ -133,8 +135,8 @@ class EventProcessor:
     def _optimize_events(self, events: List[EventDetails]):
         new_events = []
 
-        message_reactions = defaultdict(int)
-        last_reaction_time = defaultdict(int)
+        message_reactions: Dict[EventData, int] = defaultdict(int)
+        last_reaction_time: Dict[EventData, float] = defaultdict(float)
 
         # collect sum of reactions / unreaction for single message
         for event in events:
