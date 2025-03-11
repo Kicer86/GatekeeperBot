@@ -66,7 +66,8 @@ class RolesBot(discord.Client):
             await self._write_to_dedicated_channel("Restart połączenia z discordem.")
             return
 
-        self.event_processor = EventProcessor(self.loop)
+        actions = EventActions(None, None)
+        self.event_processor = EventProcessor(self.loop, actions)
 
         hash = get_current_commit_hash()
         self.logger.info(f"Bot is ready as {self.user}. git commit: {hash}. Dry run: {self.dry_run}")
