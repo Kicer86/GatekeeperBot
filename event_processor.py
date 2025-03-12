@@ -85,8 +85,7 @@ class EventProcessor:
 
                 self.user_events[user_id] = events
 
-            # drop empty lists of events
-            self.user_events = {user_id: events for user_id, events in self.user_events.items() if len(events) > 0}
+            self.user_events = self._clean_empty_events(self.user_events)
 
             # sort events
             for user_id, events in self.user_events.items():
@@ -113,8 +112,7 @@ class EventProcessor:
 
                 self.user_events[user_id] = new_events
 
-            # drop empty lists of events
-            self.user_events = {user_id: events for user_id, events in self.user_events.items() if len(events) > 0}
+            self.user_events = self._clean_empty_events(self.user_events)
 
             # suspend or hibernate
             users_to_process = len(self.user_events)
@@ -137,7 +135,11 @@ class EventProcessor:
             print("Self wake up cancelled")
 
 
-    def _optimize_events(self, events: List[EventDetails]):
+    def _clean_empty_events(self, user_events: List[EventDetails]) -> List[EventDetails]:
+        return {user_id: events for user_id, events in user_events.items() if len(events) > 0}
+
+
+    def _optimize_events(self, events: List[EventDetails]) -> List[EventDetails]:
         new_events = []
 
         message_reactions: Dict[EventData, int] = defaultdict(int)
