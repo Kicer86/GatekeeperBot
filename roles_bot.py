@@ -418,7 +418,7 @@ class RolesBot(discord.Client):
 
         time_since_last_thread_refresh = now - self.last_thread_refresh
 
-        if time_since_last_thread_refresh >= timedelta(seconds = 60):
+        if time_since_last_thread_refresh >= timedelta(days = 1):
             await self._write_to_dedicated_channel("Automatyczne odświeżanie wątków")
             for thread_id in self.config.threads_to_keep_alive:
                 guild = self.get_guild(self.guild_id)
