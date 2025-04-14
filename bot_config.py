@@ -27,3 +27,4 @@ class BotConfig:
     ids_channel_id: int = None                                                              # channel to put user ids
     guild_id: int = None                                                                    # allowed guild ID
     system_users: List[int] = field(default_factory=list)                                   # user ids to ignore during mass operations
+    threads_to_keep_alive: List[int] = field(default_factory=list)                          # list of threads to keep alive
