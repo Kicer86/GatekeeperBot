@@ -47,6 +47,7 @@ class RolesBot(discord.Client):
         self.guild_id = None
         self.unknown_users = set()
         self.last_auto_refresh = datetime.now()
+        self.last_thread_refresh = datetime.now()
         self.message_prefix = self.storage.get_config().get("message_prefix", "")
 
         # setup default values in config
@@ -414,6 +415,22 @@ class RolesBot(discord.Client):
 
             await self._refresh_roles(members)
             await self._refresh_names(user_ids)
+
+        time_since_last_thread_refresh = now - self.last_thread_refresh
+
+        if time_since_last_thread_refresh >= timedelta(seconds = 60):
+            await self._write_to_dedicated_channel("Automatyczne odświeżanie wątków")
+            for thread_id in self.config.threads_to_keep_alive:
+                guild = self.get_guild(self.guild_id)
+                channel = guild.get_channel(thread_id)
+                self.logger.debug(f"Pinging channel {channel.name}")
+                try:
+                    message: discord.Message = await channel.send(".")
+                except discord.errors.Forbidden:
+                    channel_link = utils.generate_link(self.guild_id, thread_id)
+                    await self._write_to_dedicated_channel(f"Brak praw by pingować kanał {channel_link} ({channel.name})")
+                else:
+                    await channel.delete_messages([message])
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
