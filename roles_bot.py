@@ -256,6 +256,9 @@ class RolesBot(discord.Client):
                     async with self.channel.typing():
                         await self._refresh_autoroles()
 
+                elif command == "ping_channels":
+                    await self._ping_important_threads()
+
                 elif command == "help":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Dostepne polecenia:\n"
@@ -267,6 +270,7 @@ class RolesBot(discord.Client):
                                                                "dump_db                             - zrzuca treść bazy danych\n"
                                                                "set autorefresh czas                - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
                                                                "set verbosity poziom                - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
+                                                               "ping_channels                       - pinguje kanały oznaczone w konfiguracji jako ważne\n"
                                                                "\n"
                                                                "Polecenie może być poprzedzone ID bota (zdefiniowanym w pliku konfiguracyjnym), aby wysyłać komendy do konkretnej instancji bota.\n"
                                                                "```"
