@@ -963,6 +963,7 @@ class RolesBot(discord.Client):
             acceptance_message = await regulations_channel.fetch_message(message_id)
 
             members = await utils.collect_members_reacting_on_message(acceptance_message, RolesBot.AcceptanceEmoji)
+            self.logger.debug(f"Regulations message {message_id} has positive reactions from {len(members)} members.")
 
             for member in members:
                 user_regulations_status[member.id].add((channel_id, message_id))
