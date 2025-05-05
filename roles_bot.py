@@ -256,6 +256,9 @@ class RolesBot(discord.Client):
                     async with self.channel.typing():
                         await self._refresh_autoroles()
 
+                elif command == "ping_channels":
+                    await self._ping_important_threads()
+
                 elif command == "help":
                     async with self.channel.typing():
                         await self._write_to_dedicated_channel("Dostepne polecenia:\n"
@@ -267,6 +270,11 @@ class RolesBot(discord.Client):
                                                                "dump_db                             - zrzuca treść bazy danych\n"
                                                                "set autorefresh czas                - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
                                                                "set verbosity poziom                - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
+                                                               "set_role user_id role_name          - przypisuje userowi podaną rolę (o ile to możliwe)\n"
+                                                               "refresh_autoroles                   - każdemu użytkownikowi przypisuje role według jego reakcji w odpowiednich kanałach\nUwaga: polecenie to jest bardzo czasochłonne "
+                                                                                                     "i zbyt często używane może powodować tymczasowe blokady bota przez serwery discorda.\n"
+                                                                                                     "Ponadto nie są weryfikowane żadne warunki (jak np akceptacje regulaminu). Korzystać w ostateczności.\n"
+                                                               "ping_channels                       - pinguje kanały oznaczone w konfiguracji jako ważne\n"
                                                                "\n"
                                                                "Polecenie może być poprzedzone ID bota (zdefiniowanym w pliku konfiguracyjnym), aby wysyłać komendy do konkretnej instancji bota.\n"
                                                                "```"
@@ -420,17 +428,7 @@ class RolesBot(discord.Client):
 
         if time_since_last_thread_refresh >= timedelta(days = 1):
             await self._write_to_dedicated_channel("Automatyczne odświeżanie wątków")
-            for thread_id in self.config.threads_to_keep_alive:
-                guild = self.get_guild(self.guild_id)
-                channel = guild.get_channel(thread_id)
-                self.logger.debug(f"Pinging channel {channel.name}")
-                try:
-                    message: discord.Message = await channel.send(".")
-                except discord.errors.Forbidden:
-                    channel_link = utils.generate_link(self.guild_id, thread_id)
-                    await self._write_to_dedicated_channel(f"Brak praw by pingować kanał {channel_link} ({channel.name})")
-                else:
-                    await channel.delete_messages([message])
+            await self._ping_important_threads()
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
@@ -844,6 +842,20 @@ class RolesBot(discord.Client):
             await self._apply_member_roles(member, roles, [])
 
 
+    async def _ping_important_threads(self):
+        for thread_id in self.config.threads_to_keep_alive:
+            guild = self.get_guild(self.guild_id)
+            channel = guild.get_channel(thread_id)
+            self.logger.debug(f"Pinging channel {channel.name}")
+            try:
+                message: discord.Message = await channel.send(".")
+            except discord.errors.Forbidden:
+                channel_link = utils.generate_link(self.guild_id, thread_id)
+                await self._write_to_dedicated_channel(f"Brak praw by pingować kanał {channel_link} ({channel.name})")
+            else:
+                await channel.delete_messages([message])
+
+
     async def _reset_names(self, members: List[discord.Member]):
         renames = "Resetowanie nicków:\n"
 
@@ -888,7 +900,7 @@ class RolesBot(discord.Client):
         state = "Obecny stan:\n"
 
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
-        state += f"Nieznani użytkownicy: {len(unknown_user_names)}\n"
+        state += f"Użytkownicy których id nie istnieje w bazie: {len(unknown_user_names)}\n"
         state += f"Użytkownicy którzy zaakceptowali wszystkie części regulaminu: {len(self.member_ids_accepted_regulations)}\n"
 
         autorefresh = self.storage.get_config()[RolesBot.AutoRefreshEntry]
@@ -963,9 +975,24 @@ class RolesBot(discord.Client):
             acceptance_message = await regulations_channel.fetch_message(message_id)
 
             members = await utils.collect_members_reacting_on_message(acceptance_message, RolesBot.AcceptanceEmoji)
+            self.logger.debug(f"Regulations message {message_id} has positive reactions from {len(members)} members.")
 
             for member in members:
                 user_regulations_status[member.id].add((channel_id, message_id))
+
+        # print debug information
+        regulation_messages_count = len(self.config.server_regulations_message_ids)
+        user_counts = [0] * (regulation_messages_count)
+
+        for reactions in user_regulations_status.values():
+            size = len(reactions)
+            if 1 <= size <= regulation_messages_count:
+                user_counts[size - 1] += 1
+            else:
+                self.logger.error(f"Unexpected number of user reactions: {size}")
+
+        for i in range(0, regulation_messages_count):
+            self.logger.debug(f"Number of users who reacted on {i + 1} regulation messages: {user_counts[i]}")
 
         return user_regulations_status
 
