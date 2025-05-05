@@ -420,17 +420,7 @@ class RolesBot(discord.Client):
 
         if time_since_last_thread_refresh >= timedelta(days = 1):
             await self._write_to_dedicated_channel("Automatyczne odświeżanie wątków")
-            for thread_id in self.config.threads_to_keep_alive:
-                guild = self.get_guild(self.guild_id)
-                channel = guild.get_channel(thread_id)
-                self.logger.debug(f"Pinging channel {channel.name}")
-                try:
-                    message: discord.Message = await channel.send(".")
-                except discord.errors.Forbidden:
-                    channel_link = utils.generate_link(self.guild_id, thread_id)
-                    await self._write_to_dedicated_channel(f"Brak praw by pingować kanał {channel_link} ({channel.name})")
-                else:
-                    await channel.delete_messages([message])
+            await self._ping_important_threads()
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
@@ -842,6 +832,20 @@ class RolesBot(discord.Client):
             discord_name, _ = await utils.build_user_name(self, guild, member)
             await self._write_to_dedicated_channel(f"Przywracanie brakujących ról użytkownikowi {discord_name}: {', '.join(roles)}")
             await self._apply_member_roles(member, roles, [])
+
+
+    async def _ping_important_threads(self):
+        for thread_id in self.config.threads_to_keep_alive:
+            guild = self.get_guild(self.guild_id)
+            channel = guild.get_channel(thread_id)
+            self.logger.debug(f"Pinging channel {channel.name}")
+            try:
+                message: discord.Message = await channel.send(".")
+            except discord.errors.Forbidden:
+                channel_link = utils.generate_link(self.guild_id, thread_id)
+                await self._write_to_dedicated_channel(f"Brak praw by pingować kanał {channel_link} ({channel.name})")
+            else:
+                await channel.delete_messages([message])
 
 
     async def _reset_names(self, members: List[discord.Member]):
