@@ -846,6 +846,10 @@ class RolesBot(discord.Client):
         for thread_id in self.config.threads_to_keep_alive:
             guild = self.get_guild(self.guild_id)
             channel = guild.get_channel(thread_id)
+            if channel is None:
+                self.logger.error(f"Could not fetch channel/thread with id {thread_id}")
+                continue
+
             self.logger.debug(f"Pinging channel {channel.name}")
             try:
                 message: discord.Message = await channel.send(".")
