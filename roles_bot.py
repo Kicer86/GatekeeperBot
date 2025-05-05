@@ -426,7 +426,7 @@ class RolesBot(discord.Client):
 
         time_since_last_thread_refresh = now - self.last_thread_refresh
 
-        if time_since_last_thread_refresh >= timedelta(days = 1):
+        if time_since_last_thread_refresh >= timedelta(days = 7):
             await self._write_to_dedicated_channel("Automatyczne odświeżanie wątków")
             await self._ping_important_threads()
 
