@@ -845,7 +845,12 @@ class RolesBot(discord.Client):
     async def _ping_important_threads(self):
         for thread_id in self.config.threads_to_keep_alive:
             guild = self.get_guild(self.guild_id)
-            channel = guild.get_channel(thread_id)
+            channel = await guild.fetch_channel(thread_id)
+            if channel is None:
+                self.logger.error(f"Could not fetch channel/thread with id {thread_id}")
+                await self._write_to_dedicated_channel(f"Kanał {thread_id} nie istnieje.")
+                continue
+
             self.logger.debug(f"Pinging channel {channel.name}")
             try:
                 message: discord.Message = await channel.send(".")
@@ -854,6 +859,8 @@ class RolesBot(discord.Client):
                 await self._write_to_dedicated_channel(f"Brak praw by pingować kanał {channel_link} ({channel.name})")
             else:
                 await channel.delete_messages([message])
+
+        await self._write_to_dedicated_channel("Zakończono odświeżanie kanałów")
 
 
     async def _reset_names(self, members: List[discord.Member]):
