@@ -968,6 +968,20 @@ class RolesBot(discord.Client):
             for member in members:
                 user_regulations_status[member.id].add((channel_id, message_id))
 
+        # print debug information
+        regulation_messages_count = len(self.config.server_regulations_message_ids)
+        user_counts = [0] * (regulation_messages_count)
+
+        for reactions in user_regulations_status.values():
+            size = len(reactions)
+            if 1 <= size <= regulation_messages_count:
+                user_counts[size - 1] += 1
+            else:
+                self.logger.error(f"Unexpected number of user reactions: {size}")
+
+        for i in range(0, regulation_messages_count):
+            self.logger.debug(f"Number of users who reacted on {i + 1} regulation messages: {user_counts[i]}")
+
         return user_regulations_status
 
 
