@@ -888,7 +888,7 @@ class RolesBot(discord.Client):
         state = "Obecny stan:\n"
 
         unknown_user_names = [guild.get_member(member_id).name for member_id in self.unknown_users]
-        state += f"Nieznani użytkownicy: {len(unknown_user_names)}\n"
+        state += f"Użytkownicy których id nie istnieje w bazie: {len(unknown_user_names)}\n"
         state += f"Użytkownicy którzy zaakceptowali wszystkie części regulaminu: {len(self.member_ids_accepted_regulations)}\n"
 
         autorefresh = self.storage.get_config()[RolesBot.AutoRefreshEntry]
