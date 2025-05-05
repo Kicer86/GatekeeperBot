@@ -845,7 +845,7 @@ class RolesBot(discord.Client):
     async def _ping_important_threads(self):
         for thread_id in self.config.threads_to_keep_alive:
             guild = self.get_guild(self.guild_id)
-            channel = guild.get_channel(thread_id)
+            channel = await guild.fetch_channel(thread_id)
             if channel is None:
                 self.logger.error(f"Could not fetch channel/thread with id {thread_id}")
                 continue
