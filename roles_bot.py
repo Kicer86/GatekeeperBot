@@ -426,9 +426,10 @@ class RolesBot(discord.Client):
 
         time_since_last_thread_refresh = now - self.last_thread_refresh
 
-        if time_since_last_thread_refresh >= timedelta(days = 7):
+        if time_since_last_thread_refresh >= timedelta(days = 3):
             await self._write_to_dedicated_channel("Automatyczne odświeżanie wątków")
             await self._ping_important_threads()
+            self.last_thread_refresh = now
 
 
     async def _single_user_report(self, title: str, added_roles: List[str], removed_roles: List[str]):
