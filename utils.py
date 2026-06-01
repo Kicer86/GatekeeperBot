@@ -101,9 +101,20 @@ async def collect_members_reacting_on_message(message: discord.Message, reaction
     for reaction in message.reactions:
         emoji = reaction.emoji
         if reaction_emoji is None or str(emoji) == reaction_emoji:
-            members = {user async for user in reaction.users()}
+            members = {user async for user in reaction.users(limit=_reaction_user_fetch_limit(reaction))}
 
     return members
+
+
+def _reaction_user_fetch_limit(reaction: discord.Reaction) -> int:
+    reaction_count = getattr(reaction, "count", 0)
+    guild = getattr(getattr(reaction, "message", None), "guild", None)
+    guild_member_count = getattr(guild, "member_count", None)
+
+    if isinstance(guild_member_count, int):
+        return max(reaction_count, guild_member_count)
+
+    return reaction_count
 
 
 def has_role(member: discord.Member, role_name: str) -> bool:
