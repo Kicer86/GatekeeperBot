@@ -1,7 +1,9 @@
 
 import asyncio
+import csv
 import discord
 import logging
+import os
 import subprocess
 import time
 
@@ -43,6 +45,7 @@ class RolesBot(discord.Client):
         self.channel = None
         self.logger = logger
         self.member_ids_accepted_regulations = set()
+        self.storage_dir = storage_dir
         self.storage = Configuration(storage_dir, logging.getLogger("Configuration"))
         self.guild_id = None
         self.unknown_users = set()
@@ -217,6 +220,10 @@ class RolesBot(discord.Client):
                         status += f": {data} -> {display_nickname}\n"
 
                     await self._write_to_dedicated_channel(status)
+                elif command == "dump_users":
+                    async with self.channel.typing():
+                        path, users_count = self._dump_users_to_csv(guild)
+                        await self._write_to_dedicated_channel(f"Zapisano listę {users_count} użytkowników do pliku `{os.path.basename(path)}`.")
                 elif command == "set" and len(args) > 0:
                     subcommand = args[0]
                     subargs = args[1:]
@@ -268,6 +275,7 @@ class RolesBot(discord.Client):
                                                                "test newuser @user                  - testuje procedurę dołączenia nowego użytkownika na użytkowniku @user\n"
                                                                "test del_emo ch_id msg_id usr_id    - usuwa reakcje podanego usera spod wiadomości\n"
                                                                "dump_db                             - zrzuca treść bazy danych\n"
+                                                               "dump_users                          - zapisuje listę użytkowników Discorda do pliku CSV w storage bota\n"
                                                                "set autorefresh czas                - zmienia częstotliwość auto odświeżania ról na 'czas' minut (co najmniej 5)\n"
                                                                "set verbosity poziom                - zmienia poziom gadatliwości bota. Wartości odpowiadają stałym poziomów logowania modułu 'logging' Pythona\n"
                                                                "set_role user_id role_name          - przypisuje userowi podaną rolę (o ile to możliwe)\n"
@@ -897,6 +905,62 @@ class RolesBot(discord.Client):
         result += " " + name
 
         return result
+
+
+    def _dump_users_to_csv(self, guild: discord.Guild) -> Tuple[str, int]:
+        date = datetime.now().date().isoformat()
+        path = os.path.join(self.storage_dir, f"users-{date}.csv")
+        members = sorted(guild.members, key=self._user_csv_sort_key)
+
+        with open(path, "w", encoding="utf-8", newline="") as users_file:
+            writer = csv.writer(users_file)
+            writer.writerow(["Lp.", "Discord ID", "Discord login", "Nazwa na serwerze", "Role"])
+
+            for index, member in enumerate(members, start=1):
+                writer.writerow([
+                    index,
+                    member.id,
+                    member.name,
+                    member.display_name,
+                    self._format_roles_for_csv(member.roles),
+                ])
+
+        return path, len(members)
+
+
+    def _user_csv_sort_key(self, member: discord.Member) -> Tuple[bool, str, str, int]:
+        accepted_regulations = member.id in self.member_ids_accepted_regulations
+        display_name = member.display_name.casefold()
+        discord_login = member.name.casefold()
+
+        return (not accepted_regulations, display_name, discord_login, member.id)
+
+
+    def _format_roles_for_csv(self, roles: List[discord.Role]) -> str:
+        roles_without_everyone = [role for role in roles if not self._is_default_role(role)]
+        sorted_roles = sorted(roles_without_everyone, key=self._role_csv_sort_key)
+        role_names = [role.name for role in sorted_roles]
+
+        return ";".join(role_names)
+
+
+    def _role_csv_sort_key(self, role: discord.Role):
+        name = role.name
+        role_position = getattr(role, "position", None)
+
+        if role_position is None:
+            return (1, name.casefold())
+        else:
+            return (0, -role_position, name.casefold())
+
+
+    def _is_default_role(self, role: discord.Role) -> bool:
+        is_default = getattr(role, "is_default", None)
+
+        if callable(is_default):
+            return is_default()
+        else:
+            return role.name == "@everyone"
 
 
     async def _print_status(self):
