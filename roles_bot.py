@@ -318,6 +318,11 @@ class RolesBot(discord.Client):
             guild = self.get_guild(self.guild_id)
             discord_name, log_name = await utils.build_user_name(self, guild, member_id)
 
+            if self.config.ids_channel_id is None:
+                self.logger.debug(f"User ID notification channel is not configured; not sending ID for the user {log_name}")
+                await self._write_to_dedicated_channel(f"Użytkownik {discord_name} nie istnieje w bazie. Wysyłanie ID wyłączone w konfiguracji.")
+                return
+
             if member_id_str in unknown_notified_users:
                 await self._write_to_dedicated_channel(f"Nowy użytkownik {discord_name} nie istnieje w bazie. Instrukcja nie zostanie wysłana, ponieważ została wysłana już wcześniej.")
             else:
