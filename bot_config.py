@@ -1,6 +1,6 @@
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from overrides import override
 
 from .data_sources import RolesSource, NicknamesSource
@@ -23,8 +23,8 @@ class BotConfig:
     nicknames_source: NicknamesSource = NullNicknamesSource()
     auto_roles_channels: List[int] = field(default_factory=list)                            # channel ids
     server_regulations_message_ids: List[Tuple[int, int]] = field(default_factory=list)     # list of (channel id, message id)
-    user_auto_refresh_roles_message_id: Tuple[int, int] = None                              # channel id, message id
-    ids_channel_id: Optional[int] = None                                                     # optional channel to put user ids
+    user_auto_refresh_roles_message_id: Union[Tuple[int, int], List[Tuple[int, int]]] = None # (channel id, message id) or a list thereof
+    ids_channel_id: Optional[int] = None                                                    # optional channel to put user ids
     guild_id: int = None                                                                    # allowed guild ID
     system_users: List[int] = field(default_factory=list)                                   # user ids to ignore during mass operations
     threads_to_keep_alive: List[int] = field(default_factory=list)                          # list of threads to keep alive
