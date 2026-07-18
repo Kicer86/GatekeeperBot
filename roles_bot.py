@@ -561,15 +561,14 @@ class RolesBot(discord.Client):
         """
             Check if reaction happened on roles autorefresh message, and do refresh if it did
         """
-        if self.config.user_auto_refresh_roles_message_id is None:
+        configured_messages = self.config.user_auto_refresh_roles_message_id
+        if configured_messages is None:
             return
 
-        channel_id = payload.channel_id
-        if channel_id != self.config.user_auto_refresh_roles_message_id[0]:
-            return
+        if isinstance(configured_messages, tuple):
+            configured_messages = [configured_messages]
 
-        message_id = payload.message_id
-        if message_id != self.config.user_auto_refresh_roles_message_id[1]:
+        if (payload.channel_id, payload.message_id) not in configured_messages:
             return
 
         guild = self.get_guild(payload.guild_id)
@@ -920,8 +919,11 @@ class RolesBot(discord.Client):
         autoroles_string = " ".join(autoroles_urls)
         state += f"Obserwowane kanały z autorolami: {autoroles_string}\n"
 
-        if self.config.user_auto_refresh_roles_message_id:
-            autorefresh_string = utils.generate_link(self.guild_id, self.config.user_auto_refresh_roles_message_id)
+        autorefresh_messages = self.config.user_auto_refresh_roles_message_id
+        if autorefresh_messages:
+            if isinstance(autorefresh_messages, tuple):
+                autorefresh_messages = [autorefresh_messages]
+            autorefresh_string = " ".join(utils.generate_link(self.guild_id, message) for message in autorefresh_messages)
             state += f"Wiadomość automatycznego odświeżenia użytkowników: {autorefresh_string}\n"
 
         regulations_urls = [utils.generate_link(self.guild_id, id) for id in self.config.server_regulations_message_ids]
